@@ -21,6 +21,7 @@ function SwapPage() {
         toToken: values.toToken,
         amount: values.amount,
         pin: values.pin,
+        infiniteApproval: values.infiniteApproval,
       });
       if (res?.txHash) {
         setResult(`Thành công! Tx Hash: ${res.txHash}`);
