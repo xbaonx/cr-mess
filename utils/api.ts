@@ -1,0 +1,77 @@
+import axios from 'axios';
+
+export type TokenInfo = {
+  symbol: string;
+  name?: string;
+  balance: string; // raw numeric as string for precision
+  decimals?: number;
+  priceUsd?: number;
+  logoUrl?: string;
+};
+
+export type WalletInfoResponse = {
+  userId: string;
+  walletAddress: string;
+  tokens: TokenInfo[];
+  totalUsd?: number;
+};
+
+export type SaveCreatedPayload = {
+  userId: string;
+  encryptedMnemonic: string; // base64 JSON blob
+  walletAddress: string;
+  pin: string;
+};
+
+export type ImportPayload = SaveCreatedPayload;
+
+export type ChangePinPayload = {
+  userId: string;
+  oldPin: string;
+  newPin: string;
+};
+
+export type SwapRequestPayload = {
+  userId: string;
+  fromToken: string;
+  toToken: string;
+  amount: string; // decimal string
+  pin: string;
+};
+
+const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+export const api = axios.create({
+  baseURL,
+  timeout: 20000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+export async function saveCreatedWallet(payload: SaveCreatedPayload) {
+  const { data } = await api.post('/wallet/save-created', payload);
+  return data;
+}
+
+export async function importWallet(payload: ImportPayload) {
+  const { data } = await api.post('/wallet/import', payload);
+  return data;
+}
+
+export async function changePin(payload: ChangePinPayload) {
+  const { data } = await api.post('/wallet/change-pin', payload);
+  return data;
+}
+
+export async function getWalletInfo(uid: string) {
+  const { data } = await api.get<WalletInfoResponse>('/wallet/info', {
+    params: { uid },
+  });
+  return data;
+}
+
+export async function swapRequest(payload: SwapRequestPayload) {
+  const { data } = await api.post('/swap/request', payload);
+  return data as { txHash?: string; error?: string };
+}
+
+export default api;
