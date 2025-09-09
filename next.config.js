@@ -10,6 +10,8 @@ const nextConfig = {
       ...(config.resolve.alias || {}),
       '@components': path.resolve(__dirname, 'components'),
       '@utils': path.resolve(__dirname, 'utils'),
+      '@lib': path.resolve(__dirname, 'lib'),
+      '@': path.resolve(__dirname),
     };
     return config;
   },

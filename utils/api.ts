@@ -39,38 +39,36 @@ export type SwapRequestPayload = {
   pin: string;
 };
 
-const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL;
-
 export const api = axios.create({
-  baseURL,
+  // No baseURL: we will call relative '/api/...' so it works on the same domain
   timeout: 20000,
   headers: { 'Content-Type': 'application/json' },
 });
 
 export async function saveCreatedWallet(payload: SaveCreatedPayload) {
-  const { data } = await api.post('/wallet/save-created', payload);
+  const { data } = await api.post('/api/wallet/save-created', payload);
   return data;
 }
 
 export async function importWallet(payload: ImportPayload) {
-  const { data } = await api.post('/wallet/import', payload);
+  const { data } = await api.post('/api/wallet/import', payload);
   return data;
 }
 
 export async function changePin(payload: ChangePinPayload) {
-  const { data } = await api.post('/wallet/change-pin', payload);
+  const { data } = await api.post('/api/wallet/change-pin', payload);
   return data;
 }
 
 export async function getWalletInfo(uid: string) {
-  const { data } = await api.get<WalletInfoResponse>('/wallet/info', {
+  const { data } = await api.get<WalletInfoResponse>('/api/wallet/info', {
     params: { uid },
   });
   return data;
 }
 
 export async function swapRequest(payload: SwapRequestPayload) {
-  const { data } = await api.post('/swap/request', payload);
+  const { data } = await api.post('/api/swap/request', payload);
   return data as { txHash?: string; error?: string };
 }
 
