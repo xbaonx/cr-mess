@@ -16,18 +16,36 @@ const stableUsd: Record<string, number> = {
 
 function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
 
+// simple in-memory cache for prices with 60s TTL
+type PriceCacheEntry = { ts: number; price: number };
+const PRICE_TTL_MS = 60 * 1000;
+if (!(globalThis as any).__priceCache) {
+  (globalThis as any).__priceCache = {} as Record<string, PriceCacheEntry>;
+}
+const priceCache = (globalThis as any).__priceCache as Record<string, PriceCacheEntry>;
+
 export async function getBinancePrices(symbols: string[]): Promise<Record<string, number>> {
   const unique = Array.from(new Set(symbols.map((s) => s.toUpperCase())));
   const map: Record<string, number> = {};
-  // quick fill stables
+  const now = Date.now();
+  const missing: string[] = [];
+  // quick fill stables and cached
   for (const sym of unique) {
-    if (stableUsd[sym] != null) map[sym] = stableUsd[sym];
+    if (stableUsd[sym] != null) {
+      map[sym] = stableUsd[sym];
+      continue;
+    }
+    const entry = priceCache[sym];
+    if (entry && now - entry.ts < PRICE_TTL_MS) {
+      map[sym] = entry.price;
+    } else if (sym !== 'USD') {
+      missing.push(sym);
+    }
   }
-  const need = unique.filter((s) => map[s] == null && s !== 'USD');
-  if (need.length === 0) return map;
+  if (missing.length === 0) return map;
   try {
     // Binance multiple symbols endpoint expects JSON array as query param
-    const pairs = need.map((s) => `${s}USDT`);
+    const pairs = missing.map((s) => `${s}USDT`);
     const payload = encodeURIComponent(JSON.stringify(pairs));
     const url = `${BINANCE_API}/api/v3/ticker/price?symbols=${payload}`;
     const { data } = await axios.get(url, { timeout: 15000 });
@@ -35,7 +53,10 @@ export async function getBinancePrices(symbols: string[]): Promise<Record<string
       for (const item of data) {
         const sym = String(item.symbol || '').replace(/USDT$/, '');
         const price = parseFloat(item.price);
-        if (isFinite(price)) map[sym] = price;
+        if (isFinite(price)) {
+          map[sym] = price;
+          priceCache[sym] = { ts: now, price };
+        }
       }
     }
   } catch (e) {

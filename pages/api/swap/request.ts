@@ -24,7 +24,7 @@ function randomHex(len = 64) {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
   try {
-    const { userId, fromToken, toToken, amount, pin } = req.body || {};
+    const { userId, fromToken, toToken, amount, pin, infiniteApproval } = req.body || {};
     if (!userId || !fromToken || !toToken || !amount || !pin) {
       return res.status(400).json({ message: 'Missing fields' });
     }
@@ -81,7 +81,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const allowance = await getAllowance(src.address, fromAddr, chainId);
       if (lt(allowance, amountWei)) {
         const spender = await getApproveSpender(chainId);
-        const approveTx = await buildApproveTx(src.address, amountWei, chainId);
+        const approveTx = await buildApproveTx(src.address, infiniteApproval ? undefined : amountWei, chainId);
         // Send approve
         const approveResp = await signer.sendTransaction({
           to: approveTx.to,

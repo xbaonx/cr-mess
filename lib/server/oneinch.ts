@@ -30,10 +30,21 @@ function oneInchClient() {
 }
 
 export async function getTokensMap(chainId = getChainId()): Promise<Record<string, OneInchToken>> {
+  // simple in-memory cache (5 minutes)
+  const now = Date.now();
+  if (!(globalThis as any).__oneinchTokensCache) {
+    (globalThis as any).__oneinchTokensCache = {} as Record<number, { ts: number; data: Record<string, OneInchToken> }>;
+  }
+  const cache = (globalThis as any).__oneinchTokensCache as Record<number, { ts: number; data: Record<string, OneInchToken> }>;
+  const entry = cache[chainId];
+  if (entry && now - entry.ts < 5 * 60 * 1000) {
+    return entry.data;
+  }
   const c = oneInchClient();
   const { data } = await c.get(`/swap/v6.0/${chainId}/tokens`);
-  // data.tokens is Record<address, token>
-  return data?.tokens ?? {};
+  const tokens = (data?.tokens ?? {}) as Record<string, OneInchToken>;
+  cache[chainId] = { ts: now, data: tokens };
+  return tokens;
 }
 
 export const NATIVE_TOKEN_ADDRESS = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
@@ -104,4 +115,16 @@ export function lt(a: string, b: string): boolean {
   try {
     return ethers.toBigInt(a) < ethers.toBigInt(b);
   } catch { return false; }
+}
+
+export async function getQuote(opts: { srcToken: string; dstToken: string; amountWei: string; chainId?: number }) {
+  const chainId = opts.chainId ?? getChainId();
+  const c = oneInchClient();
+  const params: any = {
+    src: opts.srcToken,
+    dst: opts.dstToken,
+    amount: opts.amountWei,
+  };
+  const { data } = await c.get(`/swap/v6.0/${chainId}/quote`, { params });
+  return data; // contains dstAmount, protocols, estimatedGas, etc.
 }

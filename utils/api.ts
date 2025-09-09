@@ -45,6 +45,7 @@ export type SwapRequestPayload = {
   toToken: string;
   amount: string; // decimal string
   pin: string;
+  infiniteApproval?: boolean;
 };
 
 export const api = axios.create({
@@ -83,6 +84,19 @@ export async function swapRequest(payload: SwapRequestPayload) {
 export async function getTokens(params?: { q?: string; limit?: number }) {
   const { data } = await api.get('/api/tokens', { params });
   return (data?.tokens || []) as ApiToken[];
+}
+
+export async function getQuote(params: { fromToken: string; toToken: string; amount: string }) {
+  const { data } = await api.get('/api/quote', { params });
+  return data as {
+    src: { symbol: string; address: string; decimals: number };
+    dst: { symbol: string; address: string; decimals: number };
+    amount: string; // decimal
+    amountWei: string;
+    dstAmountWei: string;
+    dstAmount: string; // decimal
+    estimatedGas?: string | number;
+  };
 }
 
 export default api;
