@@ -16,6 +16,14 @@ export type WalletInfoResponse = {
   totalUsd?: number;
 };
 
+export type ApiToken = {
+  symbol: string;
+  name: string;
+  address: string;
+  decimals: number;
+  logoURI?: string;
+};
+
 export type SaveCreatedPayload = {
   userId: string;
   encryptedMnemonic: string; // base64 JSON blob
@@ -70,6 +78,11 @@ export async function getWalletInfo(uid: string) {
 export async function swapRequest(payload: SwapRequestPayload) {
   const { data } = await api.post('/api/swap/request', payload);
   return data as { txHash?: string; error?: string };
+}
+
+export async function getTokens(params?: { q?: string; limit?: number }) {
+  const { data } = await api.get('/api/tokens', { params });
+  return (data?.tokens || []) as ApiToken[];
 }
 
 export default api;

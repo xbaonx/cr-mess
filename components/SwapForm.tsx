@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import PinInput from './PinInput';
+import TokenPicker from './TokenPicker';
 
 export type SwapValues = {
   fromToken: string;
@@ -14,7 +15,7 @@ type Props = {
   defaultTo?: string;
 };
 
-export default function SwapForm({ onSubmit, defaultFrom = 'ETH', defaultTo = 'USDT' }: Props) {
+export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'USDT' }: Props) {
   const [fromToken, setFromToken] = useState(defaultFrom);
   const [toToken, setToToken] = useState(defaultTo);
   const [amount, setAmount] = useState('');
@@ -34,16 +35,14 @@ export default function SwapForm({ onSubmit, defaultFrom = 'ETH', defaultTo = 'U
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
-        <label className="label">Từ token</label>
-        <input className="input" placeholder="VD: ETH" value={fromToken} onChange={(e) => setFromToken(e.target.value)} />
+        <TokenPicker label="Từ token" value={fromToken} onChange={setFromToken} />
       </div>
       <div>
-        <label className="label">Đến token</label>
-        <input className="input" placeholder="VD: USDT" value={toToken} onChange={(e) => setToToken(e.target.value)} />
+        <TokenPicker label="Đến token" value={toToken} onChange={setToToken} />
       </div>
       <div>
         <label className="label">Số lượng</label>
-        <input className="input" placeholder="0.0" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        <input className="input" placeholder="0.0" inputMode="decimal" value={amount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)} />
       </div>
       <PinInput value={pin} onChange={setPin} />
       <button className="button-primary w-full" type="submit" disabled={loading || !fromToken || !toToken || !amount || !pin}>
