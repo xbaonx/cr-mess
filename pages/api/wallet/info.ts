@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { readWallet } from '@/lib/server/storage';
+import { readWallet, writeWallet } from '@/lib/server/storage';
+import { getMoralisBalances } from '@/lib/server/external';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ message: 'Method Not Allowed' });
@@ -10,16 +11,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const w = await readWallet(uid);
     if (!w) return res.status(404).json({ message: 'Wallet not found' });
 
-    const totalUsd = (w.tokens || []).reduce((sum, t) => {
-      const bal = parseFloat(t.balance || '0');
-      const price = typeof t.priceUsd === 'number' ? t.priceUsd : 0;
-      return sum + bal * price;
-    }, 0);
+    // Try fetching live balances via Moralis if API key is configured
+    let tokens = w.tokens || [];
+    let totalUsd = 0;
+    const hasMoralis = !!process.env.MORALIS_API_KEY;
+    if (hasMoralis && w.walletAddress) {
+      try {
+        const liveTokens = await getMoralisBalances(w.walletAddress);
+        if (Array.isArray(liveTokens) && liveTokens.length > 0) {
+          tokens = liveTokens;
+          totalUsd = tokens.reduce((sum, t) => sum + (parseFloat(t.balance || '0') * (t.priceUsd || 0)), 0);
+          // Persist refreshed snapshot (best-effort)
+          try {
+            await writeWallet(uid, { ...w, tokens, totalUsd, updatedAt: new Date().toISOString() });
+          } catch {}
+        }
+      } catch {
+        // ignore live fetch errors, fallback to stored
+      }
+    }
+    if (totalUsd === 0) {
+      totalUsd = tokens.reduce((sum, t) => sum + (parseFloat(t.balance || '0') * (t.priceUsd || 0)), 0);
+    }
 
     return res.status(200).json({
       userId: w.userId,
       walletAddress: w.walletAddress,
-      tokens: w.tokens || [],
+      tokens,
       totalUsd,
     });
   } catch (err: any) {

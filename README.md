@@ -1,6 +1,6 @@
 # Crypto WebView (Next.js + TypeScript + Tailwind)
 
-A mobile-friendly WebView for a crypto chatbot running inside Facebook Messenger (Chatfuel). The app talks to a NestJS backend via REST and stores no data locally except in-memory; persistent data lives on the backend's disk (e.g. `/mnt/data/wallets/{uid}.json`).
+A mobile-friendly WebView for a crypto chatbot running inside Facebook Messenger (Chatfuel). The app talks to a Next.js API via REST and stores no data locally except in-memory; persistent data lives on the disk (e.g. `{DATA_DIR}/wallets/{uid}.json`).
 
 - Framework: Next.js (Pages Router) + TypeScript
 - Styling: TailwindCSS
@@ -21,16 +21,17 @@ A mobile-friendly WebView for a crypto chatbot running inside Facebook Messenger
 - User is uniquely identified via URL param: `?uid=fb_12345678`
 - All pages expect `uid` in the query string. For local development you can manually append it.
 
-## REST Endpoints (NestJS backend)
+## REST Endpoints (Next.js API)
 
-- POST `/wallet/create` — for Chatfuel only (not used in this WebView)
-- POST `/wallet/save-created` — save client-created wallet
-- POST `/wallet/import` — import an existing wallet
-- POST `/wallet/change-pin` — change PIN
-- GET `/wallet/info?uid=...` — fetch wallet view data
-- POST `/swap/request` — request swap
+- POST `/api/wallet/save-created` — save client-created wallet
+- POST `/api/wallet/import` — import an existing wallet
+- POST `/api/wallet/change-pin` — change PIN
+- GET `/api/wallet/info?uid=...` — fetch wallet view data
+- POST `/api/swap/request` — request swap
 
-Configure the base URL via `NEXT_PUBLIC_API_BASE_URL`.
+Note: The Chatfuel-only endpoint `POST /wallet/create` is not implemented in this Next.js API. It existed in the reference NestJS backend and is not required for the WebView flow here.
+
+For this WebView, the endpoints are implemented via Next.js API Routes under `pages/api/*` and are exposed on the same domain under `/api/...`. No external base URL is required.
 
 ## Client-side Encryption Format
 
@@ -56,7 +57,7 @@ The backend can verify or re-encrypt using the same scheme if needed. For this W
 
 ```bash
 cp .env.example .env
-# edit .env and set NEXT_PUBLIC_API_BASE_URL
+# Optionally set DATA_DIR to control where wallets are stored
 ```
 
 2. Install and run
@@ -74,6 +75,15 @@ Open http://localhost:3000?uid=fb_12345678
 - Start command: `npm start`
 
 If you prefer Docker, a sample `Dockerfile` is included. Ensure Node.js 18+.
+
+## Data storage
+
+- Wallet files are stored under `{DATA_DIR}/wallets/{uid}.json`.
+- `DATA_DIR` defaults to `/mnt/data` if available; otherwise falls back to `./data` inside the project during development.
+
+## About `backend/`
+
+- The `backend/` directory contains a compiled NestJS build (`dist/`) provided for reference. In the current setup, the Next.js API Routes inside `pages/api/` serve as the active backend for the WebView flow. You can keep `backend/` as documentation/reference or extract it into a separate service if you want a dedicated backend.
 
 ## Project Structure
 
@@ -104,4 +114,4 @@ styles/
 
 - This app deliberately avoids SSR; all API calls run client-side.
 - Designed to be embedded in Messenger WebView; UI is compact and mobile-first.
-- The backend should store files under `/mnt/data/wallets/{uid}.json`.
+- Wallet storage path can be configured via `DATA_DIR`; default is `/mnt/data/wallets/{uid}.json` or `./data/wallets/{uid}.json` in development.

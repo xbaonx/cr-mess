@@ -17,9 +17,11 @@ export default function PinInput({ label = 'Mã PIN', value, onChange, placehold
         type="password"
         inputMode="numeric"
         pattern="[0-9]*"
+        minLength={4}
+        maxLength={12}
         placeholder={placeholder}
         value={value}
-        onChange={(e) => onChange(e.target.value.replace(/\D/g, ''))}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value.replace(/\D/g, ''))}
         autoFocus={autoFocus}
       />
     </div>
