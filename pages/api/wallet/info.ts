@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { readWallet, writeWallet } from '@/lib/server/storage';
-import { getMoralisBalances, getBinancePrices } from '@/lib/server/external';
+import { getMoralisBalances, getUsdPrices } from '@/lib/server/external';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ message: 'Method Not Allowed' });
@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const symbols = Array.from(new Set((tokens || []).map((t) => String(t.symbol || '').toUpperCase()).filter(Boolean)));
       if (symbols.length > 0) {
-        const priceMap = await getBinancePrices(symbols);
+        const priceMap = await getUsdPrices(symbols);
         tokens = tokens.map((t) => ({ ...t, priceUsd: priceMap[String(t.symbol || '').toUpperCase()] ?? t.priceUsd ?? 0 }));
       }
     } catch {}

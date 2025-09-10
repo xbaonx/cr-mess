@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getTokensMap, getChainId } from '@/lib/server/oneinch';
-import { getBinancePrices } from '@/lib/server/external';
+import { getUsdPrices } from '@/lib/server/external';
 
 export type ApiToken = {
   symbol: string;
@@ -43,10 +43,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const limited = list.slice(0, limit);
-    // Enrich with prices from Binance (best-effort)
+    // Enrich with prices (Binance + 1inch fallback)
     try {
       const symbols = Array.from(new Set(limited.map((t) => t.symbol.toUpperCase())));
-      const priceMap = await getBinancePrices(symbols);
+      const priceMap = await getUsdPrices(symbols);
       for (const t of limited) {
         const key = t.symbol.toUpperCase();
         (t as any).priceUsd = priceMap[key] ?? 0;

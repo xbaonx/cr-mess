@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { TokenInfo } from '@/lib/server/storage';
+import { getQuote as oneInchGetQuote, resolveTokenBySymbol, toWei, getChainId } from '@/lib/server/oneinch';
 
 const BINANCE_API = process.env.BINANCE_API_BASE_URL || 'https://api.binance.com';
 const MORALIS_API = process.env.MORALIS_API_BASE_URL || 'https://deep-index.moralis.io/api/v2.2';
@@ -15,6 +16,37 @@ const stableUsd: Record<string, number> = {
 };
 
 function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
+
+// Combined price fetcher: try Binance first, then fallback to 1inch quote for missing symbols
+export async function getUsdPrices(symbols: string[]): Promise<Record<string, number>> {
+  const upper = Array.from(new Set(symbols.map((s) => s.toUpperCase())));
+  const primary = await getBinancePrices(upper);
+  const result: Record<string, number> = { ...primary };
+  const missing = upper.filter((s) => !(result[s] > 0));
+  if (missing.length === 0) return result;
+  try {
+    const chainId = getChainId();
+    const usdt = await resolveTokenBySymbol('USDT', chainId);
+    if (!usdt) return result;
+    for (const sym of missing) {
+      if (stableUsd[sym] != null) { result[sym] = 1; continue; }
+      try {
+        const tok = await resolveTokenBySymbol(sym, chainId);
+        if (!tok) continue;
+        const amountWei = toWei('1', tok.decimals);
+        const quote = await oneInchGetQuote({ srcToken: tok.address, dstToken: usdt.address, amountWei, chainId });
+        const dstAmountWei = String((quote as any)?.dstAmount || '0');
+        const price = parseFloat(formatUnitsFromWei(dstAmountWei, usdt.decimals));
+        if (isFinite(price) && price > 0) {
+          result[sym] = price;
+          priceCache[sym] = { ts: Date.now(), price };
+        }
+        await sleep(120);
+      } catch {}
+    }
+  } catch {}
+  return result;
+}
 
 // simple in-memory cache for prices with 60s TTL
 type PriceCacheEntry = { ts: number; price: number };
