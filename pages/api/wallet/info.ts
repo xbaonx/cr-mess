@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { readWallet, writeWallet } from '@/lib/server/storage';
-import { getMoralisBalances } from '@/lib/server/external';
+import { getMoralisBalances, getBinancePrices } from '@/lib/server/external';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ message: 'Method Not Allowed' });
@@ -30,9 +30,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // ignore live fetch errors, fallback to stored
       }
     }
-    if (totalUsd === 0) {
-      totalUsd = tokens.reduce((sum, t) => sum + (parseFloat(t.balance || '0') * (t.priceUsd || 0)), 0);
-    }
+    // Ensure priceUsd is populated even if Moralis isn't configured
+    try {
+      const symbols = Array.from(new Set((tokens || []).map((t) => String(t.symbol || '').toUpperCase()).filter(Boolean)));
+      if (symbols.length > 0) {
+        const priceMap = await getBinancePrices(symbols);
+        tokens = tokens.map((t) => ({ ...t, priceUsd: priceMap[String(t.symbol || '').toUpperCase()] ?? t.priceUsd ?? 0 }));
+      }
+    } catch {}
+
+    totalUsd = tokens.reduce((sum, t) => sum + (parseFloat(t.balance || '0') * (t.priceUsd || 0)), 0);
 
     return res.status(200).json({
       userId: w.userId,

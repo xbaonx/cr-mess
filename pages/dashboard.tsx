@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic';
 import TokenList from '@components/TokenList';
 import Notification from '@components/Notification';
 import { TokenListSkeleton } from '@components/SkeletonLoader';
-import { getWalletInfo, WalletInfoResponse } from '@utils/api';
+import { getWalletInfo, WalletInfoResponse, getTokens } from '@utils/api';
 import { useUserId, withUidPath } from '@utils/useUserId';
 
 function DashboardPage() {
@@ -12,6 +12,7 @@ function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [address, setAddress] = useState<string | null>(null);
   const [tokens, setTokens] = useState<WalletInfoResponse['tokens']>([]);
+  const [logoMap, setLogoMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!uid) return;
@@ -20,10 +21,18 @@ function DashboardPage() {
       setLoading(true);
       setError(null);
       try {
-        const info = await getWalletInfo(uid);
+        const [info, market] = await Promise.all([
+          getWalletInfo(uid),
+          getTokens({ limit: 200 }),
+        ]);
         if (!cancelled) {
           setAddress(info.walletAddress);
           setTokens(info.tokens || []);
+          const map: Record<string, string> = {};
+          for (const t of market) {
+            if (t.logoURI) map[t.symbol.toUpperCase()] = t.logoURI;
+          }
+          setLogoMap(map);
         }
       } catch (err: any) {
         if (!cancelled) setError(err?.response?.data?.message || err?.message || 'Unable to load wallet info.');
@@ -35,7 +44,11 @@ function DashboardPage() {
     return () => { cancelled = true; };
   }, [uid]);
 
-  const totalValue = tokens.reduce((acc, t) => acc + (parseFloat(t.balance || '0') * (t.priceUsd || 0)), 0);
+  const displayTokens = tokens.map(t => ({
+    ...t,
+    logoUrl: t.logoUrl || logoMap[t.symbol?.toUpperCase?.()] || undefined,
+  }));
+  const totalValue = displayTokens.reduce((acc, t) => acc + (parseFloat(t.balance || '0') * (t.priceUsd || 0)), 0);
 
   return (
     <div className="space-y-6 animate-slide-in">
@@ -90,7 +103,7 @@ function DashboardPage() {
           <TokenListSkeleton />
         ) : (
           <div className="animate-fade-in">
-            <TokenList tokens={tokens} showTotal />
+            <TokenList tokens={displayTokens} showTotal />
           </div>
         )}
       </div>

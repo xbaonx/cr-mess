@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { ApiToken, getTokens } from '@utils/api';
+import { ApiToken, getTokens, getPrices } from '@utils/api';
 import { useUserId, withUidPath } from '@utils/useUserId';
 import { MarketListSkeleton } from '@components/SkeletonLoader';
 
@@ -9,6 +9,7 @@ function MarketsPage() {
   const [tokens, setTokens] = useState<ApiToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [priceMap, setPriceMap] = useState<Record<string, number>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -18,6 +19,14 @@ function MarketsPage() {
       try {
         const list = await getTokens({ limit: 50 });
         if (!cancelled) setTokens(list);
+        // Fetch prices for these symbols
+        const symbols = Array.from(new Set(list.map((t) => t.symbol.toUpperCase())));
+        if (symbols.length > 0) {
+          try {
+            const prices = await getPrices(symbols);
+            if (!cancelled) setPriceMap(prices);
+          } catch {}
+        }
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Unable to load tokens.');
       } finally {
@@ -94,11 +103,16 @@ function MarketsPage() {
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-gray-400 group-hover:text-amber-400 transition-colors">
-              <span className="text-xs font-medium">TRADE</span>
-              <svg className="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+            <div className="text-right">
+              <div className="font-semibold text-gray-100">
+                {priceMap[t.symbol.toUpperCase()] ? `$${priceMap[t.symbol.toUpperCase()].toFixed(4)}` : <span className="text-gray-500">—</span>}
+              </div>
+              <div className="flex items-center gap-2 justify-end text-gray-400 group-hover:text-amber-400 transition-colors">
+                <span className="text-xs font-medium">TRADE</span>
+                <svg className="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
             </div>
           </a>
         ))}

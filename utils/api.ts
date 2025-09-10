@@ -99,4 +99,11 @@ export async function getQuote(params: { fromToken: string; toToken: string; amo
   };
 }
 
+export async function getPrices(symbols: string[]) {
+  const { data } = await api.get('/api/prices', {
+    params: { symbols: symbols.join(',') },
+  });
+  return (data?.prices || {}) as Record<string, number>;
+}
+
 export default api;

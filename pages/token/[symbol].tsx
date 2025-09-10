@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Notification from '@components/Notification';
 import SwapForm, { SwapValues } from '@components/SwapForm';
 import { TokenDetailSkeleton } from '@components/SkeletonLoader';
-import { ApiToken, getTokens, swapRequest } from '@utils/api';
+import { ApiToken, getTokens, swapRequest, getPrices } from '@utils/api';
 import { useUserId } from '@utils/useUserId';
 
 function TokenDetailPage() {
@@ -18,6 +18,7 @@ function TokenDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [txResult, setTxResult] = useState<string | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
+  const [priceUsd, setPriceUsd] = useState<number | null>(null);
 
   useEffect(() => {
     if (!symbol) return;
@@ -29,6 +30,11 @@ function TokenDetailPage() {
         const list = await getTokens({ q: symbol, limit: 50 });
         const found = list.find(t => t.symbol.toUpperCase() === symbol) || null;
         if (!cancelled) setToken(found);
+        // fetch live price
+        try {
+          const prices = await getPrices([symbol]);
+          if (!cancelled) setPriceUsd(prices[symbol] ?? null);
+        } catch {}
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Unable to load token info.');
       } finally {
@@ -129,8 +135,10 @@ function TokenDetailPage() {
               <div className="flex-1">
                 <div className="text-2xl font-bold text-gray-100">{symbol}</div>
                 <div className="text-gray-400 font-medium">{token?.name || 'Token'}</div>
-                <div className="text-sm text-gray-500 mt-1">
-                  Ready to trade • Live pricing
+                <div className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                  <span>Ready to trade</span>
+                  <span>•</span>
+                  <span>Price: {priceUsd != null ? `$${priceUsd.toFixed(4)}` : '—'}</span>
                 </div>
               </div>
             </div>

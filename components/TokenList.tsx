@@ -28,9 +28,17 @@ export default function TokenList({ tokens, showTotal = false }: Props) {
           return (
             <div key={t.symbol} className="card flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-gray-800 flex items-center justify-center text-sm font-bold">
-                  {t.symbol.slice(0, 4).toUpperCase()}
-                </div>
+                {t.logoUrl ? (
+                  <img
+                    src={t.logoUrl}
+                    alt={t.symbol}
+                    className="h-10 w-10 rounded-full object-cover bg-gray-800 ring-2 ring-gray-700/50"
+                  />
+                ) : (
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center text-sm font-bold ring-2 ring-gray-700/50">
+                    {t.symbol.slice(0, 3).toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <div className="font-medium">{t.symbol.toUpperCase()}</div>
                   <div className="text-sm text-gray-400">{t.name || ''}</div>
