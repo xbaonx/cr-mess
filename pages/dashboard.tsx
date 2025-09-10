@@ -53,7 +53,7 @@ function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3">
-        <a className={`button-primary text-center ${!uid ? 'pointer-events-none opacity-50' : ''}`} href={withUidPath('/swap', uid)}>Swap token</a>
+        <a className={`button-primary text-center ${!uid ? 'pointer-events-none opacity-50' : ''}`} href={withUidPath('/markets', uid)}>Buy token</a>
         <a className={`button-primary text-center ${!uid ? 'pointer-events-none opacity-50' : ''}`} href={withUidPath('/set-pin', uid)}>Đổi mã PIN</a>
         <a className={`button-primary text-center ${!uid ? 'pointer-events-none opacity-50' : ''}`} href={withUidPath('/buy-usdt', uid)}>Mua USDT</a>
       </div>
