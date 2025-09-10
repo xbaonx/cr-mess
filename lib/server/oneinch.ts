@@ -3,6 +3,8 @@ import { ethers } from 'ethers';
 
 const ONEINCH_BASE = process.env.ONEINCH_API_BASE_URL || 'https://api.1inch.dev';
 const ONEINCH_API_KEY = process.env.ONEINCH_API_KEY || '';
+const FEE_RECIPIENT = process.env.FEE_RECIPIENT || '';
+const INTEGRATOR_FEE_BPS = Number(process.env.INTEGRATOR_FEE_BPS || 0);
 
 export type OneInchToken = {
   symbol: string;
@@ -103,6 +105,10 @@ export async function buildSwapTx(opts: {
     slippage: opts.slippage,
     // allowPartialFill: false,
   };
+  if (FEE_RECIPIENT && Number.isFinite(INTEGRATOR_FEE_BPS) && INTEGRATOR_FEE_BPS > 0) {
+    params.referrer = FEE_RECIPIENT;
+    params.fee = INTEGRATOR_FEE_BPS; // bps
+  }
   const { data } = await c.get(`/swap/v6.0/${chainId}/swap`, { params });
   return data; // { tx: { to, data, value, gas, gasPrice, ... }, ... }
 }
@@ -125,6 +131,10 @@ export async function getQuote(opts: { srcToken: string; dstToken: string; amoun
     dst: opts.dstToken,
     amount: opts.amountWei,
   };
+  if (FEE_RECIPIENT && Number.isFinite(INTEGRATOR_FEE_BPS) && INTEGRATOR_FEE_BPS > 0) {
+    params.referrer = FEE_RECIPIENT;
+    params.fee = INTEGRATOR_FEE_BPS; // bps
+  }
   const { data } = await c.get(`/swap/v6.0/${chainId}/quote`, { params });
   return data; // contains dstAmount, protocols, estimatedGas, etc.
 }
