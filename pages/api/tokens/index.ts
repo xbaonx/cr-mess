@@ -1,5 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getTokensMap, getChainId } from '@/lib/server/oneinch';
+import { getBinancePrices } from '@/lib/server/external';
 
 export type ApiToken = {
   symbol: string;
@@ -7,6 +8,7 @@ export type ApiToken = {
   address: string;
   decimals: number;
   logoURI?: string;
+  priceUsd?: number;
 };
 
 const PRIORITY = ['BNB', 'WBNB', 'USDT', 'USDC', 'BUSD', 'ETH', 'BTCB', 'MATIC'];
@@ -40,7 +42,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return a.symbol.localeCompare(b.symbol);
     });
 
-    return res.status(200).json({ tokens: list.slice(0, limit) });
+    const limited = list.slice(0, limit);
+    // Enrich with prices from Binance (best-effort)
+    try {
+      const symbols = Array.from(new Set(limited.map((t) => t.symbol.toUpperCase())));
+      const priceMap = await getBinancePrices(symbols);
+      for (const t of limited) {
+        const key = t.symbol.toUpperCase();
+        (t as any).priceUsd = priceMap[key] ?? 0;
+      }
+    } catch {}
+
+    return res.status(200).json({ tokens: limited });
   } catch (err: any) {
     console.error('tokens list error', err);
     return res.status(500).json({ message: err?.message || 'Internal Server Error' });

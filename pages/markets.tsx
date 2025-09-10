@@ -105,7 +105,11 @@ function MarketsPage() {
             </div>
             <div className="text-right">
               <div className="font-semibold text-gray-100">
-                {priceMap[t.symbol.toUpperCase()] ? `$${priceMap[t.symbol.toUpperCase()].toFixed(4)}` : <span className="text-gray-500">—</span>}
+                {(() => {
+                  const sym = t.symbol.toUpperCase();
+                  const p = priceMap[sym] ?? (t as any).priceUsd ?? 0;
+                  return p > 0 ? `$${p.toFixed(4)}` : <span className="text-gray-500">—</span>;
+                })()}
               </div>
               <div className="flex items-center gap-2 justify-end text-gray-400 group-hover:text-amber-400 transition-colors">
                 <span className="text-xs font-medium">TRADE</span>
