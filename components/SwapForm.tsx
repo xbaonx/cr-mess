@@ -177,7 +177,7 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
         </div>
       )}
       {quoteError && (
-        <div className="text-sm text-red-600">{quoteError}</div>
+        <div className="text-sm text-red-400">{quoteError}</div>
       )}
 
       <PinInput value={pin} onChange={setPin} />

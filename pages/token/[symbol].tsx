@@ -1,8 +1,10 @@
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useState } from 'react';
-import { ApiToken, getTokens } from '@utils/api';
-import { useUserId, withUidPath } from '@utils/useUserId';
+import { useEffect, useState } from 'react';
+import Notification from '@components/Notification';
+import SwapForm, { SwapValues } from '@components/SwapForm';
+import { ApiToken, getTokens, swapRequest } from '@utils/api';
+import { useUserId } from '@utils/useUserId';
 
 function TokenDetailPage() {
   const router = useRouter();
@@ -13,6 +15,8 @@ function TokenDetailPage() {
   const [token, setToken] = useState<ApiToken | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [txResult, setTxResult] = useState<string | null>(null);
+  const [txError, setTxError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!symbol) return;
@@ -34,7 +38,30 @@ function TokenDetailPage() {
     return () => { cancelled = true; };
   }, [symbol]);
 
-  const tradeHref = withUidPath(`/swap?to=${encodeURIComponent(symbol)}`, uid);
+  const onSubmit = async (values: SwapValues) => {
+    setTxResult(null);
+    setTxError(null);
+    try {
+      if (!uid) throw new Error('Missing uid in URL.');
+      const res = await swapRequest({
+        userId: uid,
+        fromToken: values.fromToken,
+        toToken: values.toToken,
+        amount: values.amount,
+        pin: values.pin,
+        infiniteApproval: values.infiniteApproval,
+      });
+      if (res?.txHash) {
+        setTxResult(`Success! Tx Hash: ${res.txHash}`);
+      } else if (res?.error) {
+        setTxError(res.error);
+      } else {
+        setTxResult('Swap request submitted. Please check your transaction history.');
+      }
+    } catch (err: any) {
+      setTxError(err?.response?.data?.message || err?.message || 'Transaction failed.');
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -66,12 +93,15 @@ function TokenDetailPage() {
             </div>
           </div>
 
-          <div className="card flex items-center justify-between">
-            <div>
-              <div className="font-medium">Convert</div>
-              <div className="text-sm text-gray-400">Quickly convert between USDT and {symbol}</div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="font-medium">Buy {symbol}</div>
             </div>
-            <a href={tradeHref} className="button-primary">Trade</a>
+            {txError && <Notification type="error" message={txError} />}
+            {txResult && <Notification type="success" message={txResult} />}
+            <div className="card">
+              <SwapForm onSubmit={onSubmit} defaultTo={symbol} />
+            </div>
           </div>
         </>
       )}

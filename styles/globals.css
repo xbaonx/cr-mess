@@ -4,8 +4,16 @@
 
 html, body, #__next { height: 100%; }
 
+:root { color-scheme: dark; }
+
 /* Dark theme base */
-body { @apply bg-gray-950 text-gray-100; }
+body { 
+  @apply bg-gray-950 text-gray-100; 
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* Mobile polish */
+* { -webkit-tap-highlight-color: transparent; }
 
 .button-primary {
   @apply bg-amber-500 hover:bg-amber-600 text-gray-900 rounded-md px-4 py-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors;

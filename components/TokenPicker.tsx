@@ -92,9 +92,13 @@ export default function TokenPicker({ label = 'Token', value, onChange, placehol
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-gray-800 flex items-center justify-center text-xs font-bold">
-                      {t.symbol.slice(0, 4).toUpperCase()}
-                    </div>
+                    {t.logoURI ? (
+                      <img src={t.logoURI} alt={t.symbol} className="h-8 w-8 rounded-full object-cover bg-gray-800" />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-gray-800 flex items-center justify-center text-xs font-bold">
+                        {t.symbol.slice(0, 4).toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <div className="font-medium">{t.symbol}</div>
                       <div className="text-xs text-gray-400">{t.name}</div>
