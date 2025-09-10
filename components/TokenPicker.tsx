@@ -6,9 +6,10 @@ type Props = {
   value: string;
   onChange: (symbol: string) => void;
   placeholder?: string;
+  excludeSymbols?: string[]; // symbols to exclude from selection
 };
 
-export default function TokenPicker({ label = 'Token', value, onChange, placeholder = 'Chọn token' }: Props) {
+export default function TokenPicker({ label = 'Token', value, onChange, placeholder = 'Chọn token', excludeSymbols = [] }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,6 +50,8 @@ export default function TokenPicker({ label = 'Token', value, onChange, placehol
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [open]);
 
+  const excludeSet = useMemo(() => new Set(excludeSymbols.map(s => s.toUpperCase())), [excludeSymbols]);
+  const filteredTokens = useMemo(() => tokens.filter(t => !excludeSet.has(t.symbol.toUpperCase())), [tokens, excludeSet]);
   const selected = useMemo(() => tokens.find((t) => t.symbol.toUpperCase() === value.toUpperCase()) || null, [tokens, value]);
 
   return (
@@ -78,7 +81,7 @@ export default function TokenPicker({ label = 'Token', value, onChange, placehol
             {loading ? (
               <div className="p-3 text-sm text-gray-500">Đang tải...</div>
             ) : (
-              tokens.map((t: ApiToken) => (
+              filteredTokens.map((t: ApiToken) => (
                 <button
                   key={t.address}
                   type="button"
@@ -103,7 +106,7 @@ export default function TokenPicker({ label = 'Token', value, onChange, placehol
                 </button>
               ))
             )}
-            {!loading && tokens.length === 0 && (
+            {!loading && filteredTokens.length === 0 && (
               <div className="p-3 text-sm text-gray-500">Không có kết quả</div>
             )}
           </div>

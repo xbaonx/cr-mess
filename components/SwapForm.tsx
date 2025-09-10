@@ -20,7 +20,8 @@ type Props = {
 
 export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'USDT' }: Props) {
   const uid = useUserId();
-  const [fromToken, setFromToken] = useState(defaultFrom);
+  // Force source token to USDT regardless of defaultFrom
+  const [fromToken, setFromToken] = useState('USDT');
   const [toToken, setToToken] = useState(defaultTo);
   const [amount, setAmount] = useState('');
   const [pin, setPin] = useState('');
@@ -104,12 +105,10 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
     }
   };
 
-  const swapDirection = () => {
-    setFromToken(toToken);
-    setToToken(fromToken);
-    setQuote(null);
-    setQuoteError(null);
-  };
+  // Ensure fromToken always remains USDT
+  React.useEffect(() => {
+    if (fromToken.toUpperCase() !== 'USDT') setFromToken('USDT');
+  }, [fromToken]);
 
   const setMaxAmount = () => {
     if (typeof currentBalance === 'number' && isFinite(currentBalance)) {
@@ -123,13 +122,14 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="flex items-end gap-2">
         <div className="flex-1">
-          <TokenPicker label="Từ token" value={fromToken} onChange={(v) => { setFromToken(v); setQuote(null); }} />
+          <label className="label">Từ token</label>
+          <div className="input flex items-center justify-between bg-gray-50">
+            <span className="truncate">USDT</span>
+            <span className="text-gray-400">(cố định)</span>
+          </div>
         </div>
-        <button type="button" className="button-secondary" aria-label="Đảo chiều" onClick={swapDirection}>
-          ⇅
-        </button>
         <div className="flex-1">
-          <TokenPicker label="Đến token" value={toToken} onChange={(v) => { setToToken(v); setQuote(null); }} />
+          <TokenPicker label="Đến token" value={toToken} onChange={(v) => { setToToken(v); setQuote(null); }} excludeSymbols={['USDT']} />
         </div>
       </div>
 
