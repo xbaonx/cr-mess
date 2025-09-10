@@ -18,7 +18,7 @@ function MarketsPage() {
         const list = await getTokens({ limit: 200 });
         if (!cancelled) setTokens(list);
       } catch (e: any) {
-        if (!cancelled) setError(e?.message || 'Không thể tải danh sách token.');
+        if (!cancelled) setError(e?.message || 'Failed to load tokens.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -36,10 +36,10 @@ function MarketsPage() {
 
       <div className="card p-0">
         {loading && (
-          <div className="p-4 text-sm text-gray-500">Đang tải...</div>
+          <div className="p-4 text-sm text-gray-400">Loading...</div>
         )}
         {error && (
-          <div className="p-4 text-sm text-red-600">{error}</div>
+          <div className="p-4 text-sm text-red-400">{error}</div>
         )}
         {!loading && !error && (
           <ul>
@@ -47,15 +47,15 @@ function MarketsPage() {
               <li key={t.address}>
                 <a
                   href={withUidPath(`/token/${encodeURIComponent(t.symbol)}`, uid)}
-                  className="flex items-center justify-between px-4 py-3 hover:bg-gray-50"
+                  className="flex items-center justify-between px-4 py-3 hover:bg-gray-800"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold">
+                    <div className="h-9 w-9 rounded-full bg-gray-800 flex items-center justify-center text-xs font-bold">
                       {t.symbol.slice(0, 4).toUpperCase()}
                     </div>
                     <div>
                       <div className="font-medium">{t.symbol.toUpperCase()}</div>
-                      <div className="text-xs text-gray-500">{t.name}</div>
+                      <div className="text-xs text-gray-400">{t.name}</div>
                     </div>
                   </div>
                   <div className="text-gray-400">›</div>
@@ -63,7 +63,7 @@ function MarketsPage() {
               </li>
             ))}
             {tokens.length === 0 && (
-              <li className="px-4 py-3 text-sm text-gray-500">Không có dữ liệu</li>
+              <li className="px-4 py-3 text-sm text-gray-400">No data</li>
             )}
           </ul>
         )}

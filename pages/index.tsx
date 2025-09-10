@@ -18,35 +18,40 @@ function HomePage() {
 
   const linkSuffix = localUid ? `?uid=${encodeURIComponent(localUid)}` : '';
 
-  // If uid exists and wallet info is available, redirect to dashboard automatically
+  // If uid exists, redirect to dashboard immediately for streamlined UX
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (uid) {
+      router.replace(withUidPath('/dashboard', uid));
+    }
+  }, [uid, router.isReady, router]);
+
+  // Optional background check (non-blocking)
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
       if (!uid) return;
       setCheckingWallet(true);
       try {
-        const info = await getWalletInfo(uid);
-        if (!cancelled && info?.walletAddress) {
-          router.replace(withUidPath('/dashboard', uid));
-        }
+        await getWalletInfo(uid);
       } catch {
-        // No wallet or error -> stay on home
+        // ignore
       } finally {
         if (!cancelled) setCheckingWallet(false);
       }
     };
     run();
     return () => { cancelled = true; };
-  }, [uid, router]);
+  }, [uid]);
 
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Crypto WebView</h1>
       {!localUid && (
-        <Notification type="info" message="Thiếu uid trong URL. Hãy mở từ chatbot Facebook Messenger hoặc nhập uid để thử nghiệm." />
+        <Notification type="info" message="Missing uid in URL. Open from the chatbot or enter a uid to try it out." />
       )}
       <div className="card space-y-3">
-        <label className="label">UID (ví dụ: fb_12345678)</label>
+        <label className="label">UID (e.g., fb_12345678)</label>
         <input
           className="input"
           placeholder="fb_12345678"
@@ -57,17 +62,17 @@ function HomePage() {
       </div>
       <div className="grid grid-cols-1 gap-3">
         <Link href={`/markets${linkSuffix}`} className={`button-primary text-center ${!localUid ? 'pointer-events-none opacity-50' : ''}`}>
-          Mở Markets
+          Open Markets
         </Link>
         {checkingWallet && (
-          <div className="text-center text-xs text-gray-500">Đang kiểm tra ví có sẵn...</div>
+          <div className="text-center text-xs text-gray-500">Checking existing wallet...</div>
         )}
         <div className="grid grid-cols-2 gap-3">
           <Link href={`/create${linkSuffix}`} className={`button-secondary text-center ${!localUid ? 'pointer-events-none opacity-50' : ''}`}>
-            Tạo ví
+            Create wallet
           </Link>
           <Link href={`/import${linkSuffix}`} className={`button-secondary text-center ${!localUid ? 'pointer-events-none opacity-50' : ''}`}>
-            Nhập ví
+            Import wallet
           </Link>
         </div>
       </div>

@@ -20,7 +20,7 @@ function BuyUSDTPage() {
         const info = await getWalletInfo(uid);
         setAddress(info.walletAddress);
       } catch (err: any) {
-        setError(err?.response?.data?.message || err?.message || 'Không thể tải địa chỉ ví.');
+        setError(err?.response?.data?.message || err?.message || 'Unable to load wallet address.');
       } finally {
         setLoading(false);
       }
@@ -32,9 +32,9 @@ function BuyUSDTPage() {
     e.preventDefault();
     setError(null);
     const amt = parseFloat(amount);
-    if (!uid) return setError('Thiếu uid trong URL.');
-    if (!address) return setError('Chưa có địa chỉ ví.');
-    if (!isFinite(amt) || amt <= 0) return setError('Số lượng không hợp lệ.');
+    if (!uid) return setError('Missing uid in URL.');
+    if (!address) return setError('Wallet address not available.');
+    if (!isFinite(amt) || amt <= 0) return setError('Invalid amount.');
 
     const url = `https://moonpay.com/buy?currency=usdt&amount=${encodeURIComponent(
       amt.toString()
@@ -44,19 +44,19 @@ function BuyUSDTPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Mua USDT</h1>
+      <h1 className="text-2xl font-bold">Buy USDT</h1>
       {!uid && (
-        <Notification type="warning" message="Thiếu uid trong URL. Hãy mở từ chatbot hoặc quay lại trang chủ để nhập uid." />
+        <Notification type="warning" message="Missing uid in URL. Open from the chatbot or go back home to enter a uid." />
       )}
       {error && <Notification type="error" message={error} />}
 
       <form onSubmit={handleBuy} className="space-y-3">
         <div className="card space-y-1">
-          <div className="text-sm text-gray-600">Địa chỉ ví</div>
-          <div className="font-mono break-all">{address || (loading ? 'Đang tải...' : '-')}</div>
+          <div className="text-sm text-gray-400">Wallet address</div>
+          <div className="font-mono break-all">{address || (loading ? 'Loading...' : '-')}</div>
         </div>
         <div>
-          <label className="label">Số lượng USDT</label>
+          <label className="label">USDT amount</label>
           <input
             className="input"
             placeholder="100"
@@ -65,11 +65,11 @@ function BuyUSDTPage() {
             onChange={(e) => setAmount(e.target.value)}
           />
         </div>
-        <button className="button-primary w-full" disabled={!amount || !address || loading}>Mua qua MoonPay</button>
+        <button className="button-primary w-full" disabled={!amount || !address || loading}>Buy via MoonPay</button>
       </form>
 
       <div className="text-center">
-        <a href={withUidPath('/dashboard', uid)} className="text-sm text-gray-500 underline">Quay lại Dashboard</a>
+        <a href={withUidPath('/dashboard', uid)} className="text-sm text-gray-500 underline">Back to Dashboard</a>
       </div>
     </div>
   );

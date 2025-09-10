@@ -17,7 +17,7 @@ function SwapPage() {
     setResult(null);
     setError(null);
     try {
-      if (!uid) throw new Error('Thiếu uid trong URL.');
+      if (!uid) throw new Error('Missing uid in URL.');
       const res = await swapRequest({
         userId: uid,
         fromToken: values.fromToken,
@@ -27,14 +27,14 @@ function SwapPage() {
         infiniteApproval: values.infiniteApproval,
       });
       if (res?.txHash) {
-        setResult(`Thành công! Tx Hash: ${res.txHash}`);
+        setResult(`Success! Tx Hash: ${res.txHash}`);
       } else if (res?.error) {
         setError(res.error);
       } else {
-        setResult('Đã gửi yêu cầu swap. Vui lòng kiểm tra lịch sử giao dịch.');
+        setResult('Swap request submitted. Please check your transaction history.');
       }
     } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Giao dịch thất bại.');
+      setError(err?.response?.data?.message || err?.message || 'Transaction failed.');
     }
   };
 
@@ -42,22 +42,22 @@ function SwapPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Swap Token</h1>
       {!uid && (
-        <Notification type="warning" message="Thiếu uid trong URL. Hãy mở từ chatbot hoặc quay lại trang chủ để nhập uid." />
+        <Notification type="warning" message="Missing uid in URL. Open from the chatbot or go back home to enter a uid." />
       )}
       {error && <Notification type="error" message={error} />}
       {result && <Notification type="success" message={result} />}
 
       {!defaultTo ? (
         <div className="card space-y-2">
-          <div className="text-sm text-gray-600">Vui lòng chọn token trước khi swap.</div>
-          <a href={withUidPath('/markets', uid)} className="button-primary text-center">Mở Markets để chọn token</a>
+          <div className="text-sm text-gray-400">Please choose a token before swapping.</div>
+          <a href={withUidPath('/markets', uid)} className="button-primary text-center">Open Markets to choose a token</a>
         </div>
       ) : (
         <SwapForm onSubmit={onSubmit} defaultTo={defaultTo} />
       )}
 
       <div className="text-center">
-        <a href={withUidPath('/dashboard', uid)} className="text-sm text-gray-500 underline">Quay lại Dashboard</a>
+        <a href={withUidPath('/dashboard', uid)} className="text-sm text-gray-500 underline">Back to Dashboard</a>
       </div>
     </div>
   );

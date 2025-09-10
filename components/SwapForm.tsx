@@ -66,10 +66,10 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
   }, [walletTokens, fromToken]);
 
   const validateAmount = React.useCallback((a: string) => {
-    if (!a) return 'Vui lòng nhập số lượng.';
+    if (!a) return 'Please enter an amount.';
     const n = parseAmount(a);
-    if (!isFinite(n) || n <= 0) return 'Số lượng không hợp lệ.';
-    if (typeof currentBalance === 'number' && n > currentBalance) return 'Vượt quá số dư khả dụng.';
+    if (!isFinite(n) || n <= 0) return 'Invalid amount.';
+    if (typeof currentBalance === 'number' && n > currentBalance) return 'Exceeds available balance.';
     return null;
   }, [currentBalance]);
 
@@ -95,11 +95,11 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
     setQuoteError(null);
     setLoadingQuote(true);
     try {
-      if (!fromToken || !toToken || !amount) throw new Error('Vui lòng chọn token và nhập số lượng.');
+      if (!fromToken || !toToken || !amount) throw new Error('Please select tokens and enter an amount.');
       const q = await getQuote({ fromToken: fromToken.trim().toUpperCase(), toToken: toToken.trim().toUpperCase(), amount: amount.trim() });
       setQuote({ dstAmount: q.dstAmount, estimatedGas: q.estimatedGas });
     } catch (e: any) {
-      setQuoteError(e?.response?.data?.message || e?.message || 'Không thể lấy ước tính.');
+      setQuoteError(e?.response?.data?.message || e?.message || 'Unable to fetch quote.');
     } finally {
       setLoadingQuote(false);
     }
@@ -122,22 +122,22 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="flex items-end gap-2">
         <div className="flex-1">
-          <label className="label">Từ token</label>
-          <div className="input flex items-center justify-between bg-gray-50">
+          <label className="label">From token</label>
+          <div className="input flex items-center justify-between bg-gray-900">
             <span className="truncate">USDT</span>
-            <span className="text-gray-400">(cố định)</span>
+            <span className="text-gray-400">(fixed)</span>
           </div>
         </div>
         <div className="flex-1">
-          <TokenPicker label="Đến token" value={toToken} onChange={(v) => { setToToken(v); setQuote(null); }} excludeSymbols={['USDT']} />
+          <TokenPicker label="To token" value={toToken} onChange={(v) => { setToToken(v); setQuote(null); }} excludeSymbols={['USDT']} />
         </div>
       </div>
 
       <div>
         <div className="flex items-center justify-between">
-          <label className="label">Số lượng</label>
-          <div className="text-xs text-gray-500">
-            {walletLoading ? 'Đang tải số dư...' : (typeof currentBalance === 'number' ? `Available: ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 }).format(currentBalance)} ${fromToken}` : '\u00A0')}
+          <label className="label">Amount</label>
+          <div className="text-xs text-gray-400">
+            {walletLoading ? 'Loading balance...' : (typeof currentBalance === 'number' ? `Available: ${new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 }).format(currentBalance)} ${fromToken}` : '\u00A0')}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -163,17 +163,17 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
           Infinite approval (ERC20)
         </label>
         <button type="button" className="button-secondary px-3 py-2" onClick={handleQuote} disabled={!fromToken || !toToken || !amount || !!amountError || loadingQuote}>
-          {loadingQuote ? (<span className="inline-flex items-center gap-2"><span className="spinner" /> Đang ước tính</span>) : 'Ước tính'}
+          {loadingQuote ? (<span className="inline-flex items-center gap-2"><span className="spinner" /> Estimating...</span>) : 'Get quote'}
         </button>
       </div>
 
       {quote && (
-        <div className="text-sm text-gray-600 space-y-1">
+        <div className="text-sm text-gray-400 space-y-1">
           <div>
-            Ước tính nhận: <span className="font-medium">{quote.dstAmount} {toToken}</span>
+            Estimated receive: <span className="font-medium text-gray-100">{quote.dstAmount} {toToken}</span>
           </div>
-          {quote.estimatedGas ? <div>Gas ước tính: ~{String(quote.estimatedGas)}</div> : null}
-          <div className="text-xs text-gray-500">Giá có thể thay đổi tùy vào điều kiện mạng.</div>
+          {quote.estimatedGas ? <div>Estimated gas: ~{String(quote.estimatedGas)}</div> : null}
+          <div className="text-xs text-gray-500">Prices may change depending on network conditions.</div>
         </div>
       )}
       {quoteError && (
@@ -182,7 +182,7 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
 
       <PinInput value={pin} onChange={setPin} />
       <button className="button-primary w-full" type="submit" disabled={submitting || !fromToken || !toToken || !amount || !pin || !!amountError}>
-        {submitting ? (<span className="inline-flex items-center justify-center gap-2"><span className="spinner" /> Đang gửi...</span>) : 'Xác nhận Swap'}
+        {submitting ? (<span className="inline-flex items-center justify-center gap-2"><span className="spinner" /> Submitting...</span>) : 'Confirm Swap'}
       </button>
     </form>
   );

@@ -17,16 +17,16 @@ function SetPinPage() {
     e.preventDefault();
     setError(null);
     setSuccess(null);
-    if (!uid) return setError('Thiếu uid trong URL.');
-    if (!oldPin || !newPin) return setError('Vui lòng nhập đầy đủ thông tin.');
+    if (!uid) return setError('Missing uid in URL.');
+    if (!oldPin || !newPin) return setError('Please fill in all fields.');
     setLoading(true);
     try {
       await changePin({ userId: uid, oldPin, newPin });
-      setSuccess('Đổi PIN thành công.');
+      setSuccess('PIN updated successfully.');
       setOldPin('');
       setNewPin('');
     } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Không thể đổi PIN.');
+      setError(err?.response?.data?.message || err?.message || 'Unable to change PIN.');
     } finally {
       setLoading(false);
     }
@@ -34,23 +34,23 @@ function SetPinPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Đổi mã PIN</h1>
+      <h1 className="text-2xl font-bold">Change PIN</h1>
       {!uid && (
-        <Notification type="warning" message="Thiếu uid trong URL. Hãy mở từ chatbot hoặc quay lại trang chủ để nhập uid." />
+        <Notification type="warning" message="Missing uid in URL. Open from the chatbot or go back home to enter a uid." />
       )}
       {error && <Notification type="error" message={error} />}
       {success && <Notification type="success" message={success} />}
 
       <form className="space-y-3" onSubmit={onSubmit}>
-        <PinInput label="PIN hiện tại" value={oldPin} onChange={setOldPin} />
-        <PinInput label="PIN mới" value={newPin} onChange={setNewPin} />
+        <PinInput label="Current PIN" value={oldPin} onChange={setOldPin} />
+        <PinInput label="New PIN" value={newPin} onChange={setNewPin} />
         <button className="button-primary w-full" disabled={!oldPin || !newPin || loading}>
-          {loading ? 'Đang cập nhật...' : 'Cập nhật PIN'}
+          {loading ? 'Updating...' : 'Update PIN'}
         </button>
       </form>
 
       <div className="text-center">
-        <a href={withUidPath('/dashboard', uid)} className="text-sm text-gray-500 underline">Quay lại Dashboard</a>
+        <a href={withUidPath('/dashboard', uid)} className="text-sm text-gray-500 underline">Back to Dashboard</a>
       </div>
     </div>
   );

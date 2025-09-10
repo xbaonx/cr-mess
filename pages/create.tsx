@@ -32,8 +32,8 @@ function CreatePage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!uid) return setError('Thiếu uid trong URL.');
-    if (!isValidPin(pin)) return setError('PIN không hợp lệ (4-12 chữ số).');
+    if (!uid) return setError('Missing uid in URL.');
+    if (!isValidPin(pin)) return setError('Invalid PIN (4-12 digits).');
 
     setLoading(true);
     setError(null);
@@ -47,7 +47,7 @@ function CreatePage() {
       });
       router.replace(withUidPath('/dashboard', uid));
     } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Đã xảy ra lỗi.');
+      setError(err?.response?.data?.message || err?.message || 'An error occurred.');
     } finally {
       setLoading(false);
     }
@@ -55,41 +55,41 @@ function CreatePage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Tạo ví mới</h1>
+      <h1 className="text-2xl font-bold">Create Wallet</h1>
       {!uid && (
-        <Notification type="warning" message="Thiếu uid trong URL. Hãy mở từ chatbot hoặc quay lại trang chủ để nhập uid." />
+        <Notification type="warning" message="Missing uid in URL. Open from the chatbot or go back home to enter a uid." />
       )}
       {error && <Notification type="error" message={error} />}
 
       <div className="card space-y-2">
-        <div className="text-sm text-gray-600">Địa chỉ ví</div>
+        <div className="text-sm text-gray-400">Wallet address</div>
         <div className="font-mono break-all">{address}</div>
       </div>
 
       <div className="card space-y-2">
         <div className="flex items-center justify-between">
-          <div className="text-sm text-gray-600">Mnemonic</div>
-          <button type="button" className="text-blue-600 text-sm" onClick={() => setShowMnemonic((s: boolean) => !s)}>
-            {showMnemonic ? 'Ẩn' : 'Hiện'}
+          <div className="text-sm text-gray-400">Mnemonic</div>
+          <button type="button" className="text-amber-400 text-sm" onClick={() => setShowMnemonic((s: boolean) => !s)}>
+            {showMnemonic ? 'Hide' : 'Show'}
           </button>
         </div>
         {showMnemonic ? (
-          <div className="p-3 rounded bg-gray-100 text-sm font-mono break-words">{mnemonic}</div>
+          <div className="p-3 rounded bg-gray-800 text-sm font-mono break-words">{mnemonic}</div>
         ) : (
-          <div className="text-sm text-gray-500">Được lưu an toàn sau khi đặt PIN.</div>
+          <div className="text-sm text-gray-500">It will be stored securely after you set your PIN.</div>
         )}
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <PinInput value={pin} onChange={setPin} autoFocus />
         <button className="button-primary w-full" disabled={!canSubmit || loading}>
-          {loading ? 'Đang lưu...' : 'Lưu ví và tiếp tục'}
+          {loading ? 'Saving...' : 'Save wallet and continue'}
         </button>
       </form>
 
       <div className="text-center">
         <a href={withUidPath('/dashboard', uid)} className="text-sm text-gray-500 underline">
-          Bỏ qua và xem Dashboard
+          Skip and go to Dashboard
         </a>
       </div>
     </div>

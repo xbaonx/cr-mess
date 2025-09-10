@@ -9,7 +9,7 @@ type Props = {
   excludeSymbols?: string[]; // symbols to exclude from selection
 };
 
-export default function TokenPicker({ label = 'Token', value, onChange, placeholder = 'Chọn token', excludeSymbols = [] }: Props) {
+export default function TokenPicker({ label = 'Token', value, onChange, placeholder = 'Select token', excludeSymbols = [] }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
@@ -67,11 +67,11 @@ export default function TokenPicker({ label = 'Token', value, onChange, placehol
       </button>
 
       {open && (
-        <div className="absolute z-20 mt-1 w-full rounded-lg border bg-white shadow-lg">
+        <div className="absolute z-20 mt-1 w-full rounded-lg border border-gray-800 bg-gray-900 shadow-xl">
           <div className="p-2">
             <input
               className="input"
-              placeholder="Tìm theo symbol hoặc tên"
+              placeholder="Search by symbol or name"
               value={query}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
               autoFocus
@@ -79,35 +79,35 @@ export default function TokenPicker({ label = 'Token', value, onChange, placehol
           </div>
           <div className="max-h-64 overflow-auto">
             {loading ? (
-              <div className="p-3 text-sm text-gray-500">Đang tải...</div>
+              <div className="p-3 text-sm text-gray-400">Loading...</div>
             ) : (
               filteredTokens.map((t: ApiToken) => (
                 <button
                   key={t.address}
                   type="button"
-                  className={`w-full text-left px-3 py-2 hover:bg-gray-50 flex items-center justify-between ${t.symbol.toUpperCase() === value.toUpperCase() ? 'bg-blue-50' : ''}`}
+                  className={`w-full text-left px-3 py-2 hover:bg-gray-800 flex items-center justify-between ${t.symbol.toUpperCase() === value.toUpperCase() ? 'bg-amber-900/20' : ''}`}
                   onClick={() => {
                     onChange(t.symbol.toUpperCase());
                     setOpen(false);
                   }}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold">
+                    <div className="h-8 w-8 rounded-full bg-gray-800 flex items-center justify-center text-xs font-bold">
                       {t.symbol.slice(0, 4).toUpperCase()}
                     </div>
                     <div>
                       <div className="font-medium">{t.symbol}</div>
-                      <div className="text-xs text-gray-500">{t.name}</div>
+                      <div className="text-xs text-gray-400">{t.name}</div>
                     </div>
                   </div>
                   {t.symbol.toUpperCase() === value.toUpperCase() && (
-                    <span className="text-blue-600 text-sm">✓</span>
+                    <span className="text-amber-400 text-sm">✓</span>
                   )}
                 </button>
               ))
             )}
             {!loading && filteredTokens.length === 0 && (
-              <div className="p-3 text-sm text-gray-500">Không có kết quả</div>
+              <div className="p-3 text-sm text-gray-400">No results</div>
             )}
           </div>
         </div>

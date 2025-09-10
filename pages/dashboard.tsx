@@ -34,19 +34,19 @@ function DashboardPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold">Dashboard</h1>
       {!uid && (
-        <Notification type="warning" message="Thiếu uid trong URL. Hãy mở từ chatbot hoặc quay lại trang chủ để nhập uid." />
+        <Notification type="warning" message="Missing uid in URL. Open from the chatbot or go back home to enter a uid." />
       )}
       {error && <Notification type="error" message={error} />}
 
       <div className="card space-y-1">
-        <div className="text-sm text-gray-600">Địa chỉ ví</div>
-        <div className="font-mono break-all">{address || (loading ? 'Đang tải...' : '-')}</div>
+        <div className="text-sm text-gray-400">Wallet address</div>
+        <div className="font-mono break-all">{address || (loading ? 'Loading...' : '-')}</div>
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold mb-2">Tài sản</h2>
+        <h2 className="text-lg font-semibold mb-2">Assets</h2>
         {loading ? (
-          <div className="card">Đang tải số dư...</div>
+          <div className="card">Loading balances...</div>
         ) : (
           <TokenList tokens={tokens} showTotal />
         )}
@@ -54,8 +54,8 @@ function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-3">
         <a className={`button-primary text-center ${!uid ? 'pointer-events-none opacity-50' : ''}`} href={withUidPath('/markets', uid)}>Buy token</a>
-        <a className={`button-primary text-center ${!uid ? 'pointer-events-none opacity-50' : ''}`} href={withUidPath('/set-pin', uid)}>Đổi mã PIN</a>
-        <a className={`button-primary text-center ${!uid ? 'pointer-events-none opacity-50' : ''}`} href={withUidPath('/buy-usdt', uid)}>Mua USDT</a>
+        <a className={`button-primary text-center ${!uid ? 'pointer-events-none opacity-50' : ''}`} href={withUidPath('/set-pin', uid)}>Change PIN</a>
+        <a className={`button-primary text-center ${!uid ? 'pointer-events-none opacity-50' : ''}`} href={withUidPath('/buy-usdt', uid)}>Buy USDT</a>
       </div>
     </div>
   );

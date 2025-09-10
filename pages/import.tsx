@@ -20,12 +20,12 @@ function ImportPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!uid) return setError('Thiếu uid trong URL.');
+    if (!uid) return setError('Missing uid in URL.');
     const phrase = mnemonic.trim().replace(/\s+/g, ' ');
     try {
       // Validate mnemonic by constructing a wallet
       const w = Wallet.fromPhrase(phrase);
-      if (!isValidPin(pin)) return setError('PIN không hợp lệ (4-12 chữ số).');
+      if (!isValidPin(pin)) return setError('Invalid PIN (4-12 digits).');
       setLoading(true);
       const encryptedMnemonic = await encryptMnemonic(phrase, pin);
       await importWallet({
@@ -36,7 +36,7 @@ function ImportPage() {
       });
       router.replace(withUidPath('/dashboard', uid));
     } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || 'Mnemonic không hợp lệ hoặc có lỗi xảy ra.');
+      setError(err?.response?.data?.message || err?.message || 'Invalid mnemonic or an error occurred.');
     } finally {
       setLoading(false);
     }
@@ -44,15 +44,15 @@ function ImportPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Nhập ví</h1>
+      <h1 className="text-2xl font-bold">Import Wallet</h1>
       {!uid && (
-        <Notification type="warning" message="Thiếu uid trong URL. Hãy mở từ chatbot hoặc quay lại trang chủ để nhập uid." />
+        <Notification type="warning" message="Missing uid in URL. Open from the chatbot or go back home to enter a uid." />
       )}
       {error && <Notification type="error" message={error} />}
 
       <form onSubmit={handleSubmit} className="space-y-3">
         <div>
-          <label className="label">12 từ khóa (mnemonic)</label>
+          <label className="label">12-word mnemonic</label>
           <textarea
             className="input h-28 resize-none"
             placeholder="cat dog ..."
@@ -62,12 +62,12 @@ function ImportPage() {
         </div>
         <PinInput value={pin} onChange={setPin} />
         <button className="button-primary w-full" disabled={!mnemonic || !pin || loading}>
-          {loading ? 'Đang nhập...' : 'Nhập ví'}
+          {loading ? 'Importing...' : 'Import wallet'}
         </button>
       </form>
 
       <div className="text-center">
-        <a href={withUidPath('/dashboard', uid)} className="text-sm text-gray-500 underline">Quay lại Dashboard</a>
+        <a href={withUidPath('/dashboard', uid)} className="text-sm text-gray-500 underline">Back to Dashboard</a>
       </div>
     </div>
   );

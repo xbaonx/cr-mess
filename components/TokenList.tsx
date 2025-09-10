@@ -18,7 +18,7 @@ export default function TokenList({ tokens, showTotal = false }: Props) {
     <div className="space-y-2">
       {showTotal && (
         <div className="flex justify-between items-center card">
-          <div className="text-sm text-gray-600">Tổng giá trị</div>
+          <div className="text-sm text-gray-400">Total value</div>
           <div className="text-lg font-semibold">${formatNumber(totalUsd)}</div>
         </div>
       )}
@@ -28,23 +28,23 @@ export default function TokenList({ tokens, showTotal = false }: Props) {
           return (
             <div key={t.symbol} className="card flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center text-sm font-bold">
+                <div className="h-10 w-10 rounded-full bg-gray-800 flex items-center justify-center text-sm font-bold">
                   {t.symbol.slice(0, 4).toUpperCase()}
                 </div>
                 <div>
                   <div className="font-medium">{t.symbol.toUpperCase()}</div>
-                  <div className="text-sm text-gray-500">{t.name || ''}</div>
+                  <div className="text-sm text-gray-400">{t.name || ''}</div>
                 </div>
               </div>
               <div className="text-right">
                 <div className="font-semibold">{formatNumber(parseFloat(t.balance || '0'))}</div>
-                <div className="text-sm text-gray-500">${formatNumber(usd)}</div>
+                <div className="text-sm text-gray-400">${formatNumber(usd)}</div>
               </div>
             </div>
           );
         })}
         {tokens.length === 0 && (
-          <div className="text-center text-gray-500 text-sm">Không có token nào</div>
+          <div className="text-center text-gray-400 text-sm">No tokens</div>
         )}
       </div>
     </div>

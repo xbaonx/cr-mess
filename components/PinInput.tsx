@@ -8,7 +8,7 @@ type Props = {
   autoFocus?: boolean;
 };
 
-export default function PinInput({ label = 'Mã PIN', value, onChange, placeholder = 'Nhập PIN 4-12 số', autoFocus }: Props) {
+export default function PinInput({ label = 'PIN', value, onChange, placeholder = 'Enter PIN (4-12 digits)', autoFocus }: Props) {
   return (
     <div>
       <label className="label">{label}</label>
