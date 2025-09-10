@@ -47,6 +47,7 @@ export type SwapRequestPayload = {
   amount: string; // decimal string
   pin: string;
   infiniteApproval?: boolean;
+  refCode?: string;
 };
 
 export const api = axios.create({

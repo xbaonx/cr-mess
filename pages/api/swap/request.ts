@@ -12,7 +12,9 @@ import {
   buildSwapTx,
   lt,
   getChainId,
+  getQuote as oneInchQuote,
 } from '@/lib/server/oneinch';
+import { addReferralCredit, getRefWalletByCode } from '@/lib/server/referral';
 
 function randomHex(len = 64) {
   const chars = 'abcdef0123456789';
@@ -24,7 +26,7 @@ function randomHex(len = 64) {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
   try {
-    const { userId, fromToken, toToken, amount, pin, infiniteApproval } = req.body || {};
+    const { userId, fromToken, toToken, amount, pin, infiniteApproval, refCode } = req.body || {};
     if (!userId || !fromToken || !toToken || !amount || !pin) {
       return res.status(400).json({ message: 'Missing fields' });
     }
@@ -92,6 +94,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
+    // Precompute integrator fee for referral credit (Plan A off-chain)
+    let userCreditWei: string | null = null;
+    try {
+      const [qWithFee, qNoFee] = await Promise.all([
+        oneInchQuote({ srcToken: src.address, dstToken: dst.address, amountWei, chainId }),
+        oneInchQuote({ srcToken: src.address, dstToken: dst.address, amountWei, chainId, feeBpsOverride: 0, referrerOverride: '' }),
+      ]);
+      const withFee = BigInt(String(qWithFee?.dstAmount ?? '0'));
+      const noFee = BigInt(String(qNoFee?.dstAmount ?? '0'));
+      const integFee = noFee > withFee ? (noFee - withFee) : 0n;
+      if (integFee > 0n) {
+        const share = (integFee * 30n) / 100n; // 30%
+        if (share > 0n) userCreditWei = share.toString();
+      }
+    } catch {}
+
     // 4) Build swap tx and send
     const swapData = await buildSwapTx({
       srcToken: src.address,
@@ -113,6 +131,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       value: tx.value ? BigInt(tx.value) : undefined,
       // gas / gasPrice are optional; provider can estimate
     });
+    // Record referral credit if applicable (after successful send)
+    try {
+      const refWallet = getRefWalletByCode(refCode);
+      if (refWallet && userCreditWei) {
+        addReferralCredit(refWallet, chainId, dst.address, userCreditWei);
+      }
+    } catch {}
     return res.status(200).json({ txHash: sent.hash });
   } catch (err: any) {
     console.error('swap/request error', err);

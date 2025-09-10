@@ -123,7 +123,7 @@ export function lt(a: string, b: string): boolean {
   } catch { return false; }
 }
 
-export async function getQuote(opts: { srcToken: string; dstToken: string; amountWei: string; chainId?: number }) {
+export async function getQuote(opts: { srcToken: string; dstToken: string; amountWei: string; chainId?: number; feeBpsOverride?: number; referrerOverride?: string }) {
   const chainId = opts.chainId ?? getChainId();
   const c = oneInchClient();
   const params: any = {
@@ -131,9 +131,11 @@ export async function getQuote(opts: { srcToken: string; dstToken: string; amoun
     dst: opts.dstToken,
     amount: opts.amountWei,
   };
-  if (FEE_RECIPIENT && Number.isFinite(INTEGRATOR_FEE_BPS) && INTEGRATOR_FEE_BPS > 0) {
-    params.referrer = FEE_RECIPIENT;
-    params.fee = INTEGRATOR_FEE_BPS; // bps
+  const useFee = (opts.feeBpsOverride != null) ? Number(opts.feeBpsOverride) : INTEGRATOR_FEE_BPS;
+  const useRef = (opts.referrerOverride != null) ? opts.referrerOverride : FEE_RECIPIENT;
+  if (useRef && Number.isFinite(useFee) && useFee > 0) {
+    params.referrer = useRef;
+    params.fee = useFee; // bps
   }
   const { data } = await c.get(`/swap/v6.0/${chainId}/quote`, { params });
   return data; // contains dstAmount, protocols, estimatedGas, etc.

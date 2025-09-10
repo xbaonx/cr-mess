@@ -103,6 +103,7 @@ function TokenDetailPage() {
         amount: values.amount,
         pin: values.pin,
         infiniteApproval: values.infiniteApproval,
+        refCode: values.refCode,
       });
       if (res?.txHash) {
         setTxResult(`Success! Tx Hash: ${res.txHash}`);

@@ -25,6 +25,7 @@ function SwapPage() {
         amount: values.amount,
         pin: values.pin,
         infiniteApproval: values.infiniteApproval,
+        refCode: values.refCode,
       });
       if (res?.txHash) {
         setResult(`Success! Tx Hash: ${res.txHash}`);

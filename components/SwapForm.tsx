@@ -10,6 +10,7 @@ export type SwapValues = {
   amount: string;
   pin: string;
   infiniteApproval?: boolean;
+  refCode?: string;
 };
 
 type Props = {
@@ -30,6 +31,7 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
   const [infiniteApproval, setInfiniteApproval] = useState(false);
   const [quote, setQuote] = useState<{ dstAmount: string; estimatedGas?: string | number } | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [refCode, setRefCode] = useState<string>('');
   const [quotedInput, setQuotedInput] = useState<{ fromToken: string; toToken: string; amount: string } | null>(null);
   const [walletTokens, setWalletTokens] = useState<TokenInfo[] | null>(null);
   const [walletLoading, setWalletLoading] = useState(false);
@@ -118,7 +120,7 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
 
     setSubmitting(true);
     try {
-      await onSubmit({ fromToken: fromToken.trim().toUpperCase(), toToken: toToken.trim().toUpperCase(), amount: amount.trim(), pin, infiniteApproval });
+      await onSubmit({ fromToken: fromToken.trim().toUpperCase(), toToken: toToken.trim().toUpperCase(), amount: amount.trim(), pin, infiniteApproval, refCode: refCode.trim() || undefined });
     } finally {
       setSubmitting(false);
     }
