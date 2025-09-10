@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import Notification from '@components/Notification';
 import SwapForm, { SwapValues } from '@components/SwapForm';
+import { TokenDetailSkeleton } from '@components/SkeletonLoader';
 import { ApiToken, getTokens, swapRequest } from '@utils/api';
 import { useUserId } from '@utils/useUserId';
 
@@ -63,43 +64,107 @@ function TokenDetailPage() {
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <button className="button-secondary px-3 py-1" onClick={() => router.back()} aria-label="Back">←</button>
-        <h1 className="text-2xl font-bold">{symbol || 'Token'}</h1>
-      </div>
+  if (loading) {
+    return <TokenDetailSkeleton />;
+  }
 
-      {loading && (<div className="card">Loading...</div>)}
-      {error && (<div className="card text-red-400">{error}</div>)}
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center gap-3">
+          <button 
+            className="button-secondary px-3 py-2 h-10 w-10 flex items-center justify-center" 
+            onClick={() => router.back()} 
+            aria-label="Back"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            {symbol || 'Token'}
+          </h1>
+        </div>
+        <div className="card-elevated text-red-400 text-center">
+          <div className="text-red-400/70 text-4xl mb-2">⚠️</div>
+          {error}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 animate-slide-in">
+      <div className="flex items-center gap-3">
+        <button 
+          className="button-secondary px-3 py-2 h-10 w-10 flex items-center justify-center group" 
+          onClick={() => router.back()} 
+          aria-label="Back"
+        >
+          <svg className="w-4 h-4 transform group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+          {symbol || 'Token'}
+        </h1>
+      </div>
 
       {!loading && !error && (
         <>
-          <div className="card">
-            <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full bg-gray-800 flex items-center justify-center text-sm font-bold">
-                {symbol.slice(0, 4)}
-              </div>
-              <div>
-                <div className="text-xl font-semibold">{symbol}</div>
-                <div className="text-sm text-gray-400">{token?.name || ''}</div>
+          {/* Token Info Card */}
+          <div className="glass-card p-6">
+            <div className="flex items-center gap-4">
+              {token?.logoURI ? (
+                <img 
+                  src={token.logoURI} 
+                  alt={symbol} 
+                  className="h-16 w-16 rounded-full object-cover bg-gray-800 ring-2 ring-gray-700/50" 
+                />
+              ) : (
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-lg font-bold text-gray-900 ring-2 ring-amber-500/20">
+                  {symbol.slice(0, 3)}
+                </div>
+              )}
+              <div className="flex-1">
+                <div className="text-2xl font-bold text-gray-100">{symbol}</div>
+                <div className="text-gray-400 font-medium">{token?.name || 'Token'}</div>
+                <div className="text-sm text-gray-500 mt-1">
+                  Ready to trade • Live pricing
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="card">
-            <div className="h-40 w-full rounded-md bg-gray-800 flex items-center justify-center text-gray-400 text-sm">
-              Price chart (placeholder)
+          {/* Price Chart Placeholder */}
+          <div className="card-elevated">
+            <div className="h-48 w-full rounded-xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 flex items-center justify-center text-gray-400 text-sm border border-gray-700/30">
+              <div className="text-center">
+                <div className="text-2xl mb-2">📈</div>
+                <div className="font-medium">Price Chart</div>
+                <div className="text-xs text-gray-500">Coming soon</div>
+              </div>
             </div>
           </div>
 
-          <div className="space-y-2">
+          {/* Buy Section */}
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <div className="font-medium">Buy {symbol}</div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-200">Buy {symbol}</h2>
+                <div className="text-sm text-gray-400">Convert USDT to {symbol}</div>
+              </div>
+              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center">
+                <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+              </div>
             </div>
+            
             {txError && <Notification type="error" message={txError} />}
             {txResult && <Notification type="success" message={txResult} />}
-            <div className="card">
+            
+            <div className="card-elevated">
               <SwapForm onSubmit={onSubmit} defaultTo={symbol} />
             </div>
           </div>
