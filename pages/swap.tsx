@@ -4,11 +4,14 @@ import Notification from '@components/Notification';
 import SwapForm, { SwapValues } from '@components/SwapForm';
 import { swapRequest } from '@utils/api';
 import { useUserId, withUidPath } from '@utils/useUserId';
+import { useRouter } from 'next/router';
 
 function SwapPage() {
+  const router = useRouter();
   const uid = useUserId();
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const defaultTo = typeof router.query.to === 'string' ? router.query.to.toUpperCase() : undefined;
 
   const onSubmit = async (values: SwapValues) => {
     setResult(null);
@@ -44,7 +47,7 @@ function SwapPage() {
       {error && <Notification type="error" message={error} />}
       {result && <Notification type="success" message={result} />}
 
-      <SwapForm onSubmit={onSubmit} />
+      <SwapForm onSubmit={onSubmit} defaultTo={defaultTo} />
 
       <div className="text-center">
         <a href={withUidPath('/dashboard', uid)} className="text-sm text-gray-500 underline">Quay lại Dashboard</a>
