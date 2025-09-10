@@ -47,7 +47,14 @@ function SwapPage() {
       {error && <Notification type="error" message={error} />}
       {result && <Notification type="success" message={result} />}
 
-      <SwapForm onSubmit={onSubmit} defaultTo={defaultTo} />
+      {!defaultTo ? (
+        <div className="card space-y-2">
+          <div className="text-sm text-gray-600">Vui lòng chọn token trước khi swap.</div>
+          <a href={withUidPath('/markets', uid)} className="button-primary text-center">Mở Markets để chọn token</a>
+        </div>
+      ) : (
+        <SwapForm onSubmit={onSubmit} defaultTo={defaultTo} />
+      )}
 
       <div className="text-center">
         <a href={withUidPath('/dashboard', uid)} className="text-sm text-gray-500 underline">Quay lại Dashboard</a>

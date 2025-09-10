@@ -31,12 +31,17 @@ function HomePage() {
         />
       </div>
       <div className="grid grid-cols-1 gap-3">
-        <Link href={`/create${linkSuffix}`} className={`button-primary text-center ${!localUid ? 'pointer-events-none opacity-50' : ''}`}>
-          Tạo ví mới
+        <Link href={`/markets${linkSuffix}`} className={`button-primary text-center ${!localUid ? 'pointer-events-none opacity-50' : ''}`}>
+          Mở Markets
         </Link>
-        <Link href={`/import${linkSuffix}`} className={`button-primary text-center ${!localUid ? 'pointer-events-none opacity-50' : ''}`}>
-          Nhập ví
-        </Link>
+        <div className="grid grid-cols-2 gap-3">
+          <Link href={`/create${linkSuffix}`} className={`button-secondary text-center ${!localUid ? 'pointer-events-none opacity-50' : ''}`}>
+            Tạo ví
+          </Link>
+          <Link href={`/import${linkSuffix}`} className={`button-secondary text-center ${!localUid ? 'pointer-events-none opacity-50' : ''}`}>
+            Nhập ví
+          </Link>
+        </div>
       </div>
     </div>
   );
