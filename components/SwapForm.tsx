@@ -30,6 +30,7 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
   const [infiniteApproval, setInfiniteApproval] = useState(false);
   const [quote, setQuote] = useState<{ dstAmount: string; estimatedGas?: string | number } | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [quotedInput, setQuotedInput] = useState<{ fromToken: string; toToken: string; amount: string } | null>(null);
   const [walletTokens, setWalletTokens] = useState<TokenInfo[] | null>(null);
   const [walletLoading, setWalletLoading] = useState(false);
   const [amountError, setAmountError] = useState<string | null>(null);
@@ -77,31 +78,49 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
     setAmountError(validateAmount(amount));
   }, [amount, validateAmount]);
 
+  const quoteValid = React.useMemo(() => {
+    if (!quote || !quotedInput) return false;
+    return (
+      quotedInput.fromToken === fromToken.trim().toUpperCase() &&
+      quotedInput.toToken === toToken.trim().toUpperCase() &&
+      quotedInput.amount === amount.trim()
+    );
+  }, [quote, quotedInput, fromToken, toToken, amount]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const err = validateAmount(amount);
     setAmountError(err);
     if (err) return;
+
+    // Ensure we have a fresh quote for the current inputs
+    let hasValidQuote = quoteValid;
+    if (!hasValidQuote) {
+      setQuote(null);
+      setQuoteError(null);
+      setLoadingQuote(true);
+      try {
+        if (!fromToken || !toToken || !amount) throw new Error('Please select tokens and enter an amount.');
+        const q = await getQuote({ fromToken: fromToken.trim().toUpperCase(), toToken: toToken.trim().toUpperCase(), amount: amount.trim() });
+        setQuote({ dstAmount: q.dstAmount, estimatedGas: q.estimatedGas });
+        setQuotedInput({ fromToken: fromToken.trim().toUpperCase(), toToken: toToken.trim().toUpperCase(), amount: amount.trim() });
+        hasValidQuote = true;
+      } catch (e: any) {
+        setQuoteError(e?.response?.data?.message || e?.message || 'Unable to fetch quote.');
+        hasValidQuote = false;
+      } finally {
+        setLoadingQuote(false);
+      }
+    }
+
+    // Require PIN to proceed with the swap
+    if (!hasValidQuote || !pin) return;
+
     setSubmitting(true);
     try {
       await onSubmit({ fromToken: fromToken.trim().toUpperCase(), toToken: toToken.trim().toUpperCase(), amount: amount.trim(), pin, infiniteApproval });
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleQuote = async () => {
-    setQuote(null);
-    setQuoteError(null);
-    setLoadingQuote(true);
-    try {
-      if (!fromToken || !toToken || !amount) throw new Error('Please select tokens and enter an amount.');
-      const q = await getQuote({ fromToken: fromToken.trim().toUpperCase(), toToken: toToken.trim().toUpperCase(), amount: amount.trim() });
-      setQuote({ dstAmount: q.dstAmount, estimatedGas: q.estimatedGas });
-    } catch (e: any) {
-      setQuoteError(e?.response?.data?.message || e?.message || 'Unable to fetch quote.');
-    } finally {
-      setLoadingQuote(false);
     }
   };
 
@@ -129,7 +148,7 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
           </div>
         </div>
         <div className="flex-1">
-          <TokenPicker label="To token" value={toToken} onChange={(v) => { setToToken(v); setQuote(null); }} excludeSymbols={['USDT']} />
+          <TokenPicker label="To token" value={toToken} onChange={(v) => { setToToken(v); setQuote(null); setQuotedInput(null); setQuoteError(null); }} excludeSymbols={['USDT']} />
         </div>
       </div>
 
@@ -146,7 +165,7 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
             placeholder="0.0"
             inputMode="decimal"
             value={amount}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAmount(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => { setAmount(e.target.value); setQuote(null); setQuotedInput(null); setQuoteError(null); }}
             aria-invalid={!!amountError}
             aria-describedby={amountError ? 'amount-error' : undefined}
           />
@@ -157,14 +176,11 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
         {amountError && <div id="amount-error" className="input-hint-error">{amountError}</div>}
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-start">
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={infiniteApproval} onChange={(e) => setInfiniteApproval(e.target.checked)} />
           Infinite approval (ERC20)
         </label>
-        <button type="button" className="button-secondary px-3 py-2" onClick={handleQuote} disabled={!fromToken || !toToken || !amount || !!amountError || loadingQuote}>
-          {loadingQuote ? (<span className="inline-flex items-center gap-2"><span className="spinner" /> Estimating...</span>) : 'Get quote'}
-        </button>
       </div>
 
       {quote && (
@@ -181,8 +197,18 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
       )}
 
       <PinInput value={pin} onChange={setPin} />
-      <button className="button-primary w-full" type="submit" disabled={submitting || !fromToken || !toToken || !amount || !pin || !!amountError}>
-        {submitting ? (<span className="inline-flex items-center justify-center gap-2"><span className="spinner" /> Submitting...</span>) : 'Confirm Swap'}
+      <button className="button-primary w-full" type="submit" disabled={submitting || loadingQuote || !fromToken || !toToken || !amount || !!amountError}>
+        {submitting ? (
+          <span className="inline-flex items-center justify-center gap-2"><span className="spinner" /> Submitting...</span>
+        ) : loadingQuote ? (
+          <span className="inline-flex items-center justify-center gap-2"><span className="spinner" /> Estimating...</span>
+        ) : !quoteValid ? (
+          'Get quote'
+        ) : !pin ? (
+          'Enter PIN to confirm'
+        ) : (
+          'Confirm Swap'
+        )}
       </button>
     </form>
   );
