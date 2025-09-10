@@ -45,7 +45,27 @@ export async function getBinancePrices(symbols: string[]): Promise<Record<string
   if (missing.length === 0) return map;
   try {
     // Binance multiple symbols endpoint expects JSON array as query param
-    const pairs = missing.map((s) => `${s}USDT`);
+    // Expand with alias symbols to improve hit rate (e.g., WBNB -> BNB, BTCB -> BTC)
+    const aliasMap: Record<string, string> = {
+      WBNB: 'BNB',
+      WETH: 'ETH',
+      WBTC: 'BTC',
+      BTCB: 'BTC',
+      WMATIC: 'MATIC',
+      WAVAX: 'AVAX',
+      WFTM: 'FTM',
+      WBETH: 'ETH',
+    };
+    const expanded = new Set<string>();
+    const originals: Record<string, Set<string>> = {};
+    for (const s of missing) {
+      expanded.add(s);
+      const canonical = aliasMap[s] || (s.startsWith('W') && s.length > 3 ? s.slice(1) : s);
+      if (canonical && canonical !== s) expanded.add(canonical);
+      if (!originals[canonical]) originals[canonical] = new Set();
+      originals[canonical].add(s);
+    }
+    const pairs = Array.from(expanded).map((s) => `${s}USDT`);
     const payload = encodeURIComponent(JSON.stringify(pairs));
     const url = `${BINANCE_API}/api/v3/ticker/price?symbols=${payload}`;
     const { data } = await axios.get(url, { timeout: 15000 });
@@ -56,6 +76,16 @@ export async function getBinancePrices(symbols: string[]): Promise<Record<string
         if (isFinite(price)) {
           map[sym] = price;
           priceCache[sym] = { ts: now, price };
+        }
+      }
+      // propagate canonical prices back to original symbols (aliases)
+      for (const [canonical, origSet] of Object.entries(originals)) {
+        const price = map[canonical];
+        if (isFinite(price)) {
+          for (const orig of Array.from(origSet)) {
+            map[orig] = price;
+            priceCache[orig] = { ts: now, price };
+          }
         }
       }
     }
