@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Notification from '@components/Notification';
 import SwapForm, { SwapValues } from '@components/SwapForm';
 import { TokenDetailSkeleton } from '@components/SkeletonLoader';
-import { ApiToken, getTokens, swapRequest, getPrices } from '@utils/api';
+import { ApiToken, getTokens, swapRequest, getPrices, getPriceChanges } from '@utils/api';
 import { useUserId } from '@utils/useUserId';
 
 function TokenDetailPage() {
@@ -19,6 +19,8 @@ function TokenDetailPage() {
   const [txResult, setTxResult] = useState<string | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
   const [priceUsd, setPriceUsd] = useState<number | null>(null);
+  const [changePct, setChangePct] = useState<number | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   useEffect(() => {
     if (!symbol) return;
@@ -30,10 +32,17 @@ function TokenDetailPage() {
         const list = await getTokens({ q: symbol, limit: 50 });
         const found = list.find(t => t.symbol.toUpperCase() === symbol) || null;
         if (!cancelled) setToken(found);
-        // fetch live price
+        // fetch live price and 24h change
         try {
-          const prices = await getPrices([symbol]);
-          if (!cancelled) setPriceUsd(prices[symbol] ?? null);
+          const [prices, changes] = await Promise.all([
+            getPrices([symbol]),
+            getPriceChanges([symbol]),
+          ]);
+          if (!cancelled) {
+            setPriceUsd(prices[symbol] ?? null);
+            setChangePct(changes?.changes?.[symbol] ?? null);
+            setLastUpdated(changes?.ts ?? Date.now());
+          }
         } catch {}
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Unable to load token info.');
@@ -42,7 +51,22 @@ function TokenDetailPage() {
       }
     };
     run();
-    return () => { cancelled = true; };
+    // Poll every 30s for fresh price and change
+    const id = setInterval(async () => {
+      if (cancelled || !symbol) return;
+      try {
+        const [prices, changes] = await Promise.all([
+          getPrices([symbol]),
+          getPriceChanges([symbol]),
+        ]);
+        if (!cancelled) {
+          setPriceUsd(prices[symbol] ?? null);
+          setChangePct(changes?.changes?.[symbol] ?? null);
+          setLastUpdated(changes?.ts ?? Date.now());
+        }
+      } catch {}
+    }, 30000);
+    return () => { cancelled = true; clearInterval(id); };
   }, [symbol]);
 
   const onSubmit = async (values: SwapValues) => {
@@ -135,10 +159,23 @@ function TokenDetailPage() {
               <div className="flex-1">
                 <div className="text-2xl font-bold text-gray-100">{symbol}</div>
                 <div className="text-gray-400 font-medium">{token?.name || 'Token'}</div>
-                <div className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+                <div className="text-sm text-gray-500 mt-1 flex items-center gap-3 flex-wrap">
                   <span>Ready to trade</span>
                   <span>•</span>
                   <span>Price: {priceUsd != null ? `$${priceUsd.toFixed(4)}` : '—'}</span>
+                  <span>•</span>
+                  <span>
+                    {changePct == null ? (
+                      <span className="text-gray-500">—</span>
+                    ) : (
+                      <span className={changePct > 0 ? 'text-emerald-400' : changePct < 0 ? 'text-red-400' : 'text-gray-400'}>
+                        {(changePct > 0 ? '+' : '') + changePct.toFixed(2)}%
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-xs text-gray-600">
+                    {lastUpdated ? `Updated ${new Date(lastUpdated).toLocaleTimeString()}` : ''}
+                  </span>
                 </div>
               </div>
             </div>

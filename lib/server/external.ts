@@ -16,6 +16,53 @@ const stableUsd: Record<string, number> = {
 };
 
 function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
+
+export async function getBinance24hChanges(symbols: string[]): Promise<Record<string, number>> {
+  const unique = Array.from(new Set(symbols.map((s) => s.toUpperCase())));
+  const result: Record<string, number> = {};
+  // expand aliases like in price fetcher
+  const aliasMap: Record<string, string> = {
+    WBNB: 'BNB',
+    WETH: 'ETH',
+    WBTC: 'BTC',
+    BTCB: 'BTC',
+    WMATIC: 'MATIC',
+    WAVAX: 'AVAX',
+    WFTM: 'FTM',
+    WBETH: 'ETH',
+  };
+  const expanded = new Set<string>();
+  const originals: Record<string, Set<string>> = {};
+  for (const s of unique) {
+    expanded.add(s);
+    const canonical = aliasMap[s] || (s.startsWith('W') && s.length > 3 ? s.slice(1) : s);
+    if (canonical && canonical !== s) expanded.add(canonical);
+    if (!originals[canonical]) originals[canonical] = new Set();
+    originals[canonical].add(s);
+  }
+  const pairs = Array.from(expanded).map((s) => `${s}USDT`);
+  const payload = encodeURIComponent(JSON.stringify(pairs));
+  const url = `${BINANCE_API}/api/v3/ticker/24hr?symbols=${payload}`;
+  try {
+    const { data } = await axios.get(url, { timeout: 8000 });
+    if (Array.isArray(data)) {
+      for (const item of data) {
+        const sym = String(item.symbol || '').replace(/USDT$/, '');
+        const pct = parseFloat(String(item.priceChangePercent || '0'));
+        if (isFinite(pct)) result[sym] = pct;
+      }
+      for (const [canonical, origSet] of Object.entries(originals)) {
+        const pct = result[canonical];
+        if (isFinite(pct)) {
+          for (const orig of Array.from(origSet)) {
+            result[orig] = pct;
+          }
+        }
+      }
+    }
+  } catch {}
+  return result;
+}
 function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   return new Promise<T>((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('timeout')), ms);

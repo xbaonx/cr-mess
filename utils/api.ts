@@ -22,6 +22,7 @@ export type ApiToken = {
   address: string;
   decimals: number;
   logoURI?: string;
+  priceUsd?: number;
 };
 
 export type SaveCreatedPayload = {
@@ -104,6 +105,16 @@ export async function getPrices(symbols: string[]) {
     params: { symbols: symbols.join(',') },
   });
   return (data?.prices || {}) as Record<string, number>;
+}
+
+export async function getPriceChanges(symbols: string[]) {
+  const { data } = await api.get('/api/prices/changes', {
+    params: { symbols: symbols.join(',') },
+  });
+  return {
+    changes: (data?.changes || {}) as Record<string, number>,
+    ts: (data?.ts as number) || Date.now(),
+  };
 }
 
 export default api;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { ApiToken, getTokens, getPrices } from '@utils/api';
+import { ApiToken, getTokens, getPrices, getPriceChanges } from '@utils/api';
 import { useUserId, withUidPath } from '@utils/useUserId';
 import { MarketListSkeleton } from '@components/SkeletonLoader';
 
@@ -10,6 +10,8 @@ function MarketsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [priceMap, setPriceMap] = useState<Record<string, number>>({});
+  const [changeMap, setChangeMap] = useState<Record<string, number>>({});
+  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -23,8 +25,15 @@ function MarketsPage() {
         const symbols = Array.from(new Set(list.map((t) => t.symbol.toUpperCase())));
         if (symbols.length > 0) {
           try {
-            const prices = await getPrices(symbols);
-            if (!cancelled) setPriceMap(prices);
+            const [prices, changes] = await Promise.all([
+              getPrices(symbols),
+              getPriceChanges(symbols),
+            ]);
+            if (!cancelled) {
+              setPriceMap(prices);
+              setChangeMap(changes.changes || {});
+              setLastUpdated(changes.ts || Date.now());
+            }
           } catch {}
         }
       } catch (e: any) {
@@ -36,6 +45,30 @@ function MarketsPage() {
     run();
     return () => { cancelled = true; };
   }, []);
+
+  // Poll every 30s for fresh prices and changes using the latest tokens list
+  useEffect(() => {
+    if (!tokens || tokens.length === 0) return;
+    let cancelled = false;
+    const symbols = Array.from(new Set(tokens.map((t) => t.symbol.toUpperCase())));
+    const fetchUpdates = async () => {
+      if (cancelled || symbols.length === 0) return;
+      try {
+        const [prices, changes] = await Promise.all([
+          getPrices(symbols),
+          getPriceChanges(symbols),
+        ]);
+        if (!cancelled) {
+          setPriceMap(prices);
+          setChangeMap(changes.changes || {});
+          setLastUpdated(changes.ts || Date.now());
+        }
+      } catch {}
+    };
+    fetchUpdates();
+    const id = setInterval(fetchUpdates, 30000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [tokens]);
 
   if (loading) {
     return (
@@ -71,7 +104,10 @@ function MarketsPage() {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
           Markets
         </h1>
-        <div className="text-sm text-gray-400">{tokens.length} tokens</div>
+        <div className="text-right">
+          <div className="text-sm text-gray-400">{tokens.length} tokens</div>
+          <div className="text-xs text-gray-500">{lastUpdated ? `Updated ${new Date(lastUpdated).toLocaleTimeString()}` : '—'}</div>
+        </div>
       </div>
       
       <div className="card-elevated p-0 overflow-hidden">
@@ -109,6 +145,16 @@ function MarketsPage() {
                   const sym = t.symbol.toUpperCase();
                   const p = priceMap[sym] ?? (t as any).priceUsd ?? 0;
                   return p > 0 ? `$${p.toFixed(4)}` : <span className="text-gray-500">—</span>;
+                })()}
+              </div>
+              <div className="text-xs">
+                {(() => {
+                  const sym = t.symbol.toUpperCase();
+                  const pct = changeMap[sym];
+                  if (pct == null) return <span className="text-gray-500">—</span>;
+                  const cls = pct > 0 ? 'text-emerald-400' : pct < 0 ? 'text-red-400' : 'text-gray-400';
+                  const sign = pct > 0 ? '+' : '';
+                  return <span className={cls}>{`${sign}${pct.toFixed(2)}%`}</span>;
                 })()}
               </div>
               <div className="flex items-center gap-2 justify-end text-gray-400 group-hover:text-amber-400 transition-colors">
