@@ -117,4 +117,9 @@ export async function getPriceChanges(symbols: string[]) {
   };
 }
 
+export async function getOhlc(params: { symbol: string; interval?: string; limit?: number }) {
+  const { data } = await api.get('/api/prices/ohlc', { params });
+  return (data?.candles || []) as Array<{ t: number; o: number; h: number; l: number; c: number; v: number }>;
+}
+
 export default api;

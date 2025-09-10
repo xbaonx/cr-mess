@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import Notification from '@components/Notification';
 import SwapForm, { SwapValues } from '@components/SwapForm';
 import { TokenDetailSkeleton } from '@components/SkeletonLoader';
-import { ApiToken, getTokens, swapRequest, getPrices, getPriceChanges } from '@utils/api';
+import { ApiToken, getTokens, swapRequest, getPrices, getPriceChanges, getOhlc } from '@utils/api';
+import Sparkline from '@components/Sparkline';
 import { useUserId } from '@utils/useUserId';
 
 function TokenDetailPage() {
@@ -21,6 +22,7 @@ function TokenDetailPage() {
   const [priceUsd, setPriceUsd] = useState<number | null>(null);
   const [changePct, setChangePct] = useState<number | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [closes, setCloses] = useState<number[] | null>(null);
 
   useEffect(() => {
     if (!symbol) return;
@@ -66,6 +68,26 @@ function TokenDetailPage() {
         }
       } catch {}
     }, 30000);
+    return () => { cancelled = true; clearInterval(id); };
+  }, [symbol]);
+
+  // Load OHLC for chart
+  useEffect(() => {
+    if (!symbol) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const candles = await getOhlc({ symbol, interval: '1h', limit: 72 });
+        if (!cancelled) {
+          const arr = Array.isArray(candles) ? candles.map(c => c.c).filter((v) => isFinite(v)) : [];
+          setCloses(arr.length ? arr : []);
+        }
+      } catch {
+        if (!cancelled) setCloses([]);
+      }
+    };
+    load();
+    const id = setInterval(load, 300000); // refresh every 5m
     return () => { cancelled = true; clearInterval(id); };
   }, [symbol]);
 
@@ -181,15 +203,15 @@ function TokenDetailPage() {
             </div>
           </div>
 
-          {/* Price Chart Placeholder */}
-          <div className="card-elevated">
-            <div className="h-48 w-full rounded-xl bg-gradient-to-br from-gray-800/50 to-gray-900/50 flex items-center justify-center text-gray-400 text-sm border border-gray-700/30">
-              <div className="text-center">
-                <div className="text-2xl mb-2">📈</div>
-                <div className="font-medium">Price Chart</div>
-                <div className="text-xs text-gray-500">Coming soon</div>
+          {/* Price Chart */}
+          <div className="card-elevated p-4">
+            {closes && closes.length > 1 ? (
+              <Sparkline data={closes} className="w-full h-32" />
+            ) : (
+              <div className="h-32 w-full rounded-lg bg-gradient-to-br from-gray-800/50 to-gray-900/50 flex items-center justify-center text-gray-400 text-sm border border-gray-700/30">
+                Không có dữ liệu biểu đồ
               </div>
-            </div>
+            )}
           </div>
 
           {/* Buy Section */}
