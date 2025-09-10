@@ -16,32 +16,48 @@ const stableUsd: Record<string, number> = {
 };
 
 function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('timeout')), ms);
+    p.then((v) => { clearTimeout(timer); resolve(v); })
+     .catch((e) => { clearTimeout(timer); reject(e); });
+  });
+}
 
 // Combined price fetcher: try Binance first, then fallback to 1inch quote for missing symbols
-export async function getUsdPrices(symbols: string[]): Promise<Record<string, number>> {
+export async function getUsdPrices(symbols: string[], opts?: { maxFallback?: number; totalTimeoutMs?: number; perCallTimeoutMs?: number }): Promise<Record<string, number>> {
   const upper = Array.from(new Set(symbols.map((s) => s.toUpperCase())));
   const primary = await getBinancePrices(upper);
   const result: Record<string, number> = { ...primary };
   const missing = upper.filter((s) => !(result[s] > 0));
   if (missing.length === 0) return result;
+  const maxFallback = Math.max(0, opts?.maxFallback ?? 12);
+  const totalTimeoutMs = Math.max(0, opts?.totalTimeoutMs ?? 8000);
+  const perCallTimeoutMs = Math.max(500, opts?.perCallTimeoutMs ?? 3000);
+  const start = Date.now();
+  let used = 0;
   try {
     const chainId = getChainId();
-    const usdt = await resolveTokenBySymbol('USDT', chainId);
+    const usdt = await withTimeout(resolveTokenBySymbol('USDT', chainId), perCallTimeoutMs).catch(() => null as any);
     if (!usdt) return result;
     for (const sym of missing) {
+      if (Date.now() - start > totalTimeoutMs) break;
+      if (used >= maxFallback) break;
       if (stableUsd[sym] != null) { result[sym] = 1; continue; }
       try {
-        const tok = await resolveTokenBySymbol(sym, chainId);
+        const tok = await withTimeout(resolveTokenBySymbol(sym, chainId), perCallTimeoutMs).catch(() => null as any);
         if (!tok) continue;
         const amountWei = toWei('1', tok.decimals);
-        const quote = await oneInchGetQuote({ srcToken: tok.address, dstToken: usdt.address, amountWei, chainId });
+        const quote = await withTimeout(oneInchGetQuote({ srcToken: tok.address, dstToken: usdt.address, amountWei, chainId }), perCallTimeoutMs).catch(() => null as any);
+        if (!quote) continue;
         const dstAmountWei = String((quote as any)?.dstAmount || '0');
         const price = parseFloat(formatUnitsFromWei(dstAmountWei, usdt.decimals));
         if (isFinite(price) && price > 0) {
           result[sym] = price;
           priceCache[sym] = { ts: Date.now(), price };
         }
-        await sleep(120);
+        used += 1;
+        await sleep(50);
       } catch {}
     }
   } catch {}
@@ -100,7 +116,7 @@ export async function getBinancePrices(symbols: string[]): Promise<Record<string
     const pairs = Array.from(expanded).map((s) => `${s}USDT`);
     const payload = encodeURIComponent(JSON.stringify(pairs));
     const url = `${BINANCE_API}/api/v3/ticker/price?symbols=${payload}`;
-    const { data } = await axios.get(url, { timeout: 15000 });
+    const { data } = await axios.get(url, { timeout: 8000 });
     if (Array.isArray(data)) {
       for (const item of data) {
         const sym = String(item.symbol || '').replace(/USDT$/, '');

@@ -11,13 +11,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const w = await readWallet(uid);
     if (!w) return res.status(404).json({ message: 'Wallet not found' });
 
-    // Try fetching live balances via Moralis if API key is configured
+    // Small helper to cap slow calls
+    const withTimeout = async <T,>(p: Promise<T>, ms: number): Promise<T> => {
+      return new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error('timeout')), ms);
+        p.then((v) => { clearTimeout(timer); resolve(v); }).catch((e) => { clearTimeout(timer); reject(e); });
+      });
+    };
+
+    // Try fetching live balances via Moralis if API key is configured, but cap at 5s
     let tokens = w.tokens || [];
     let totalUsd = 0;
     const hasMoralis = !!process.env.MORALIS_API_KEY;
     if (hasMoralis && w.walletAddress) {
       try {
-        const liveTokens = await getMoralisBalances(w.walletAddress);
+        const liveTokens = await withTimeout(getMoralisBalances(w.walletAddress), 5000);
         if (Array.isArray(liveTokens) && liveTokens.length > 0) {
           tokens = liveTokens;
           totalUsd = tokens.reduce((sum, t) => sum + (parseFloat(t.balance || '0') * (t.priceUsd || 0)), 0);
@@ -34,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       const symbols = Array.from(new Set((tokens || []).map((t) => String(t.symbol || '').toUpperCase()).filter(Boolean)));
       if (symbols.length > 0) {
-        const priceMap = await getUsdPrices(symbols);
+        const priceMap = await getUsdPrices(symbols, { totalTimeoutMs: 3000, perCallTimeoutMs: 1200, maxFallback: 8 });
         tokens = tokens.map((t) => ({ ...t, priceUsd: priceMap[String(t.symbol || '').toUpperCase()] ?? t.priceUsd ?? 0 }));
       }
     } catch {}
