@@ -95,7 +95,7 @@ function DashboardPage() {
           </div>
         </div>
         <div className="font-mono text-sm bg-gray-900/50 rounded-lg p-3 break-all border border-gray-700/30">
-          {address || (loading ? (
+          {address || (walletLoading ? (
             <div className="animate-pulse">
               <div className="h-4 bg-gray-700 rounded w-3/4"></div>
             </div>
