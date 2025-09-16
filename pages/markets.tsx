@@ -27,12 +27,9 @@ function MarketsPage() {
           try {
             if (BINANCE_ONLY) {
               const prices = await getPrices(symbols, { fast: true, binanceOnly: true });
-              // Filter tokens to only those that have a Binance price > 0
-              const filtered = list.filter((t) => (prices[t.symbol.toUpperCase()] ?? 0) > 0);
-              const fsyms = Array.from(new Set(filtered.map((t) => t.symbol.toUpperCase())));
-              const changes = fsyms.length > 0 ? await getPriceChanges(fsyms) : { changes: {}, ts: Date.now() };
+              const changes = await getPriceChanges(symbols);
               if (!cancelled) {
-                setTokens(filtered);
+                setTokens(list);
                 setPriceMap(prices);
                 setChangeMap(changes.changes || {});
                 setLastUpdated(changes.ts || Date.now());
