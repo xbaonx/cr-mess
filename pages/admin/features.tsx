@@ -1,5 +1,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
+import AdminLayout from '@components/AdminLayout';
+import Toggle from '@components/Toggle';
 
 function useLocalStorage(key: string, initial: string = '') {
   const [val, setVal] = React.useState<string>(() => {
@@ -50,41 +52,32 @@ function AdminFeaturesPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Features Admin</h1>
+    <AdminLayout title="Admin · Features" subtitle="Toggle features and maintenance mode">
+      <div className="max-w-3xl space-y-6">
+        <div className="space-y-3 p-4 border border-gray-800 rounded-md bg-gray-900/30">
+          <div>
+            <label className="block text-sm font-medium mb-1">Admin API Token</label>
+            <input className="w-full rounded px-3 py-2 bg-gray-900 text-gray-100 border border-gray-700 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30" placeholder="x-admin-token" value={token} onChange={e => setToken(e.target.value)} />
+            <p className="text-xs text-gray-500 mt-1">Token sẽ được lưu tạm trong LocalStorage của trình duyệt.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-2">
+            <Toggle checked={!!features.enableBuy} onChange={(v) => setFeatures((f:any) => ({ ...f, enableBuy: v }))} label="Enable Buy" description="Show Buy tab in bottom nav" />
+            <Toggle checked={!!features.enableSwap} onChange={(v) => setFeatures((f:any) => ({ ...f, enableSwap: v }))} label="Enable Swap" description="Allow swap form on token page" />
+            <Toggle checked={!!features.maintenanceMode} onChange={(v) => setFeatures((f:any) => ({ ...f, maintenanceMode: v }))} label="Maintenance Mode" description="Show maintenance banner and restrict actions" />
+          </div>
+          <div className="flex items-center gap-3 pt-2">
+            <button className="bg-gray-800 text-white px-4 py-2 rounded disabled:opacity-50" onClick={load} disabled={loading}>Load</button>
+            <button className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50" onClick={save} disabled={loading}>Save</button>
+          </div>
+        </div>
 
-      <div className="space-y-3 p-4 border rounded-md">
-        <div>
-          <label className="block text-sm font-medium mb-1">Admin API Token</label>
-          <input className="w-full border rounded px-3 py-2" placeholder="x-admin-token" value={token} onChange={e => setToken(e.target.value)} />
-          <p className="text-xs text-gray-500 mt-1">Token sẽ được lưu tạm trong LocalStorage của trình duyệt.</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={!!features.enableBuy} onChange={(e) => setFeatures((f:any) => ({ ...f, enableBuy: e.target.checked }))} />
-            <span className="text-sm">Enable Buy</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={!!features.enableSwap} onChange={(e) => setFeatures((f:any) => ({ ...f, enableSwap: e.target.checked }))} />
-            <span className="text-sm">Enable Swap</span>
-          </label>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={!!features.maintenanceMode} onChange={(e) => setFeatures((f:any) => ({ ...f, maintenanceMode: e.target.checked }))} />
-            <span className="text-sm">Maintenance Mode</span>
-          </label>
-        </div>
-        <div className="flex items-center gap-3 pt-2">
-          <button className="bg-gray-800 text-white px-4 py-2 rounded disabled:opacity-50" onClick={load} disabled={loading}>Load</button>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50" onClick={save} disabled={loading}>Save</button>
-        </div>
+        {loading && <div className="text-sm text-gray-400">Đang xử lý...</div>}
+        {error && <div className="text-sm text-red-400">Lỗi: {error}</div>}
+        {result && (
+          <pre className="p-4 bg-gray-900 text-gray-100 border border-gray-700 rounded text-xs overflow-auto">{JSON.stringify(result, null, 2)}</pre>
+        )}
       </div>
-
-      {loading && <div className="text-sm text-gray-600">Đang xử lý...</div>}
-      {error && <div className="text-sm text-red-600">Lỗi: {error}</div>}
-      {result && (
-        <pre className="p-4 bg-gray-50 border rounded text-xs overflow-auto">{JSON.stringify(result, null, 2)}</pre>
-      )}
-    </div>
+    </AdminLayout>
   );
 }
 
