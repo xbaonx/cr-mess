@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { withUidPath, useUserId } from '@utils/useUserId';
+import useSWR from 'swr';
+import { getFeatures } from '@utils/api';
 
 function NavItem({ href, label, icon, active }: { href: string; label: string; icon: React.ReactNode; active: boolean }) {
   return (
@@ -22,10 +24,12 @@ export default function BottomNav() {
   const router = useRouter();
   const uid = useUserId();
   const path = router.pathname;
+  const { data: features } = useSWR('features', getFeatures, { revalidateOnFocus: false, refreshInterval: 60000 });
 
   const marketsHref = withUidPath('/markets', uid);
   const dashboardHref = withUidPath('/dashboard', uid);
   const buyHref = withUidPath('/buy-usdt', uid);
+  const showBuy = features?.enableBuy !== false;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 border-t border-gray-800 bg-gray-950/95 backdrop-blur supports-[backdrop-filter]:bg-gray-950/70">
@@ -50,16 +54,18 @@ export default function BottomNav() {
             </svg>
           )}
         />
-        <NavItem
-          href={buyHref}
-          label="Buy USDT"
-          active={path.startsWith('/buy-usdt')}
-          icon={(
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
-              <path d="M12 3v18m-6-6h12" />
-            </svg>
-          )}
-        />
+        {showBuy && (
+          <NavItem
+            href={buyHref}
+            label="Buy USDT"
+            active={path.startsWith('/buy-usdt')}
+            icon={(
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="h-6 w-6">
+                <path d="M12 3v18m-6-6h12" />
+              </svg>
+            )}
+          />
+        )}
       </div>
     </nav>
   );

@@ -88,3 +88,32 @@ export async function upsertWallet(uid: string, update: Partial<WalletRecord> & 
   await writeWallet(uid, merged);
   return merged;
 }
+
+export async function listWalletUids(params?: { limit?: number; q?: string }): Promise<string[]> {
+  const dir = await getWalletsDir();
+  try {
+    const files = await fs.readdir(dir);
+    let uids = files
+      .filter((f) => f.endsWith('.json'))
+      .map((f) => f.replace(/\.json$/, ''));
+    const q = (params?.q || '').trim().toLowerCase();
+    if (q) {
+      uids = uids.filter((u) => u.toLowerCase().includes(q));
+    }
+    const limit = Math.min(Math.max(params?.limit || 200, 1), 5000);
+    return uids.slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
+export async function deleteWallet(uid: string): Promise<boolean> {
+  const dir = await getWalletsDir();
+  const p = walletPath(dir, uid);
+  try {
+    await fs.unlink(p);
+    return true;
+  } catch {
+    return false;
+  }
+}

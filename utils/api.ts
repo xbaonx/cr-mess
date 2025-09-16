@@ -25,6 +25,13 @@ export type ApiToken = {
   priceUsd?: number;
 };
 
+export type Features = {
+  enableSwap: boolean;
+  enableBuy: boolean;
+  maintenanceMode: boolean;
+  [key: string]: any;
+};
+
 export type SaveCreatedPayload = {
   userId: string;
   encryptedMnemonic: string; // base64 JSON blob
@@ -121,6 +128,11 @@ export async function getPriceChanges(symbols: string[]) {
 export async function getOhlc(params: { symbol: string; interval?: string; limit?: number }) {
   const { data } = await api.get('/api/prices/ohlc', { params });
   return (data?.candles || []) as Array<{ t: number; o: number; h: number; l: number; c: number; v: number }>;
+}
+
+export async function getFeatures() {
+  const { data } = await api.get<Features>('/api/features');
+  return data;
 }
 
 export default api;

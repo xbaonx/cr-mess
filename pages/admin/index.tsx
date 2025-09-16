@@ -33,9 +33,11 @@ function AdminIndexPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Link href="/admin/referral" className="button-secondary text-center">Referral Admin</Link>
         <Link href="/admin/tokens" className="button-secondary text-center">Tokens Admin</Link>
+        <Link href="/admin/users" className="button-secondary text-center">Users Admin</Link>
+        <Link href="/admin/features" className="button-secondary text-center">Features Admin</Link>
       </div>
 
       <div className="text-xs text-gray-500">

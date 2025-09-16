@@ -1,10 +1,11 @@
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
+import useSWR from 'swr';
 import Notification from '@components/Notification';
 import SwapForm, { SwapValues } from '@components/SwapForm';
 import { TokenDetailSkeleton } from '@components/SkeletonLoader';
-import { ApiToken, getTokens, swapRequest } from '@utils/api';
+import { ApiToken, getTokens, swapRequest, getFeatures } from '@utils/api';
 import { useUserId } from '@utils/useUserId';
 
 function TokenDetailPage() {
@@ -19,6 +20,7 @@ function TokenDetailPage() {
   const [txResult, setTxResult] = useState<string | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
   // Removed price/change/chart states
+  const { data: features } = useSWR('features', getFeatures, { revalidateOnFocus: false, refreshInterval: 60000 });
 
   useEffect(() => {
     if (!symbol) return;
@@ -140,27 +142,34 @@ function TokenDetailPage() {
 
           {/* Chart removed */}
 
-          {/* Buy Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-200">Buy {symbol}</h2>
-                <div className="text-sm text-gray-400">Convert USDT to {symbol}</div>
+          {/* Buy/Swap Section (feature-gated) */}
+          {features?.maintenanceMode && (
+            <div className="card-elevated text-amber-400 text-sm p-4">Currently under maintenance. Some functions may be disabled.</div>
+          )}
+          {features?.enableSwap !== false ? (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-200">Buy {symbol}</h2>
+                  <div className="text-sm text-gray-400">Convert USDT to {symbol}</div>
+                </div>
+                <div className="h-8 w-8 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                </div>
               </div>
-              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center">
-                <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                </svg>
+              
+              {txError && <Notification type="error" message={txError} />}
+              {txResult && <Notification type="success" message={txResult} />}
+              
+              <div className="card-elevated">
+                <SwapForm onSubmit={onSubmit} defaultTo={symbol} />
               </div>
             </div>
-            
-            {txError && <Notification type="error" message={txError} />}
-            {txResult && <Notification type="success" message={txResult} />}
-            
-            <div className="card-elevated">
-              <SwapForm onSubmit={onSubmit} defaultTo={symbol} />
-            </div>
-          </div>
+          ) : (
+            <div className="text-sm text-gray-500">Swaps are currently disabled.</div>
+          )}
         </>
       )}
     </div>
