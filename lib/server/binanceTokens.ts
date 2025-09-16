@@ -40,6 +40,21 @@ export async function getBinanceUSDTBaseAssets(): Promise<string[]> {
     // Final fallback: safe default bases (ensures API doesn't 500)
     DEFAULT_BASES.forEach((b) => set.add(b));
   }
+  // Secondary fallback: if still too few, derive from /ticker/price list
+  try {
+    if (set.size < 20) {
+      const { data } = await axios.get(`${BINANCE_API}/api/v3/ticker/price`, { timeout: 12000 });
+      if (Array.isArray(data)) {
+        for (const item of data) {
+          const sym = String(item.symbol || '');
+          if (sym.endsWith('USDT') && sym.length > 4) {
+            const base = sym.slice(0, -4).toUpperCase();
+            if (base) set.add(base);
+          }
+        }
+      }
+    }
+  } catch {}
   // If still empty for any reason, return defaults
   if (set.size === 0) DEFAULT_BASES.forEach((b) => set.add(b));
   return Array.from(set);
