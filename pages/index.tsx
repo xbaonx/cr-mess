@@ -46,7 +46,7 @@ function HomePage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Crypto WebView</h1>
+      <h1 className="text-2xl font-bold">F-wallet</h1>
       {!localUid && (
         <Notification type="info" message="Missing uid in URL. Open from the chatbot or enter a uid to try it out." />
       )}

@@ -12,9 +12,8 @@ export default function TopBar() {
           className="h-7 w-7 rounded-md object-contain ring-1 ring-amber-500/30 bg-gray-900"
         />
         <Link href="/" className="text-lg font-bold text-gray-100 hover:text-white">
-          Crypto WebView
+          F-wallet
         </Link>
-        <div className="ml-auto text-xs text-gray-500">beta</div>
       </div>
     </header>
   );

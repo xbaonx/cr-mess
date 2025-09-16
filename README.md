@@ -1,4 +1,4 @@
-# Crypto WebView (Next.js + TypeScript + Tailwind)
+# F-wallet (Next.js + TypeScript + Tailwind)
 
 A mobile-friendly WebView for a crypto chatbot running inside Facebook Messenger (Chatfuel). The app talks to a Next.js API via REST and stores no data locally except in-memory; persistent data lives on the disk (e.g. `{DATA_DIR}/wallets/{uid}.json`).
 
