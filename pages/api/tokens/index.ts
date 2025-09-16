@@ -22,6 +22,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const limit = Math.min(Math.max(parseInt(String(req.query.limit || '200')) || 200, 1), 1000);
 
     const chainId = getChainId();
+    const qSource = String(req.query.source || '').toLowerCase();
+    const source = (qSource || process.env.TOKEN_SOURCE || 'binance').toLowerCase();
     // In-memory cache by chainId
     const g = globalThis as any;
     if (!g.__tokenCatalog) g.__tokenCatalog = {};
@@ -29,7 +31,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let cached: { tokens: SimpleToken[]; ts: number } | undefined = g.__tokenCatalog[chainId];
 
     async function refreshCatalog(): Promise<SimpleToken[]> {
-      const source = (process.env.TOKEN_SOURCE || 'binance').toLowerCase();
       let fresh: SimpleToken[] = [];
       if (source === 'oneinch') {
         const map = await getTokensMap(chainId);
@@ -53,17 +54,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       // Try in-memory, then file, else rebuild
       if (cached && Date.now() - cached.ts < TTL_MS) {
-        base = cached.tokens;
+        const looksBinanceCached = cached.tokens.every((t: any) => String(t.address || '').startsWith('BINANCE:'));
+        const expectBinanceCached = source !== 'oneinch';
+        if ((expectBinanceCached && !looksBinanceCached) || (!expectBinanceCached && looksBinanceCached)) {
+          base = await refreshCatalog();
+        } else {
+          base = cached.tokens;
+        }
       } else {
         const file = await readTokenCatalog(chainId);
         if (file && Array.isArray(file.tokens) && file.tokens.length > 0) {
-          base = file.tokens;
-          // refresh async if stale
-          if (!cached || Date.now() - (cached?.ts || 0) >= TTL_MS) {
-            refreshCatalog().catch(() => {});
+          const looksBinance = file.tokens.every((t: any) => String(t.address || '').startsWith('BINANCE:'));
+          const expectBinance = source !== 'oneinch';
+          // If mismatch (e.g., switched source), rebuild immediately and return fresh in this request
+          if ((expectBinance && !looksBinance) || (!expectBinance && looksBinance)) {
+            base = await refreshCatalog();
+          } else {
+            base = file.tokens;
+            // refresh async if stale
+            if (!cached || Date.now() - (cached?.ts || 0) >= TTL_MS) {
+              refreshCatalog().catch(() => {});
+            }
+            // hydrate memory
+            g.__tokenCatalog[chainId] = { tokens: base, ts: Date.now() };
           }
-          // hydrate memory
-          g.__tokenCatalog[chainId] = { tokens: base, ts: Date.now() };
         } else {
           base = await refreshCatalog();
         }
@@ -105,8 +119,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     } catch {}
 
-    // Encourage caching of token list (content changes infrequently)
-    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=600, stale-while-revalidate=3600');
+    // Shorten cache to reflect source switch quickly
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');
+    res.setHeader('X-Token-Source', source);
     return res.status(200).json({ tokens: limited });
   } catch (err: any) {
     console.error('tokens list error', err);

@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getTokensMap, getChainId } from '@/lib/server/oneinch';
 import { writeTokenCatalog, type SimpleToken } from '@/lib/server/tokenStore';
+import { buildBinanceTokenCatalog } from '@/lib/server/binanceTokens';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
@@ -12,14 +13,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const chainIdEnv = getChainId();
-    const map = await getTokensMap(chainIdEnv);
-    const fresh: SimpleToken[] = Object.values(map || {}).map((t: any) => ({
-      symbol: String(t.symbol || ''),
-      name: String(t.name || ''),
-      address: String(t.address || ''),
-      decimals: Number(t.decimals || 18),
-      logoURI: t.logoURI,
-    }));
+    const source = (process.env.TOKEN_SOURCE || 'binance').toLowerCase();
+    let fresh: SimpleToken[] = [];
+    if (source === 'oneinch') {
+      const map = await getTokensMap(chainIdEnv);
+      fresh = Object.values(map || {}).map((t: any) => ({
+        symbol: String(t.symbol || ''),
+        name: String(t.name || ''),
+        address: String(t.address || ''),
+        decimals: Number(t.decimals || 18),
+        logoURI: t.logoURI,
+      }));
+    } else {
+      fresh = await buildBinanceTokenCatalog();
+    }
 
     await writeTokenCatalog(fresh, chainIdEnv);
     // hydrate global cache as in /api/tokens
@@ -29,7 +36,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       g.__tokenCatalog[chainIdEnv] = { tokens: fresh, ts: Date.now() };
     } catch {}
 
-    return res.status(200).json({ chainId: chainIdEnv, count: fresh.length, updatedAt: new Date().toISOString() });
+    return res.status(200).json({ chainId: chainIdEnv, count: fresh.length, updatedAt: new Date().toISOString(), source });
   } catch (err: any) {
     console.error('tokens refresh error', err);
     return res.status(500).json({ message: err?.message || 'Internal Server Error' });

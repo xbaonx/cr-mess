@@ -83,7 +83,7 @@ export async function swapRequest(payload: SwapRequestPayload) {
   return data as { txHash?: string; error?: string };
 }
 
-export async function getTokens(params?: { q?: string; limit?: number }) {
+export async function getTokens(params?: { q?: string; limit?: number; source?: string }) {
   const { data } = await api.get('/api/tokens', { params });
   return (data?.tokens || []) as ApiToken[];
 }

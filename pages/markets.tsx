@@ -12,7 +12,7 @@ function MarketsPage() {
   const [priceMap, setPriceMap] = useState<Record<string, number>>({});
   const [changeMap, setChangeMap] = useState<Record<string, number>>({});
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
-  const BINANCE_ONLY = (process.env.NEXT_PUBLIC_BINANCE_ONLY === '1' || process.env.NEXT_PUBLIC_BINANCE_ONLY === 'true');
+  const BINANCE_ONLY = true;
 
   useEffect(() => {
     let cancelled = false;
@@ -20,7 +20,7 @@ function MarketsPage() {
       setLoading(true);
       setError(null);
       try {
-        const list = await getTokens({ limit: 50 });
+        const list = await getTokens({ limit: 50, source: 'binance' });
         // Fetch prices for these symbols
         const symbols = Array.from(new Set(list.map((t) => t.symbol.toUpperCase())));
         if (symbols.length > 0) {
@@ -122,12 +122,10 @@ function MarketsPage() {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
             Markets
           </h1>
-          {BINANCE_ONLY && (
-            <div className="mt-1 inline-flex items-center gap-2 text-xs text-amber-400 bg-amber-400/10 px-2 py-1 rounded">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
-              Binance-only mode
-            </div>
-          )}
+          <div className="mt-1 inline-flex items-center gap-2 text-xs text-amber-400 bg-amber-400/10 px-2 py-1 rounded">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+            Binance-only mode
+          </div>
         </div>
         <div className="text-right">
           <div className="text-sm text-gray-400">{tokens.length} tokens</div>
