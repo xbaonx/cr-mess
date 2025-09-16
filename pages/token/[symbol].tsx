@@ -4,8 +4,7 @@ import { useEffect, useState } from 'react';
 import Notification from '@components/Notification';
 import SwapForm, { SwapValues } from '@components/SwapForm';
 import { TokenDetailSkeleton } from '@components/SkeletonLoader';
-import { ApiToken, getTokens, swapRequest, getPrices, getPriceChanges, getOhlc } from '@utils/api';
-import Sparkline from '@components/Sparkline';
+import { ApiToken, getTokens, swapRequest } from '@utils/api';
 import { useUserId } from '@utils/useUserId';
 
 function TokenDetailPage() {
@@ -19,10 +18,7 @@ function TokenDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [txResult, setTxResult] = useState<string | null>(null);
   const [txError, setTxError] = useState<string | null>(null);
-  const [priceUsd, setPriceUsd] = useState<number | null>(null);
-  const [changePct, setChangePct] = useState<number | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
-  const [closes, setCloses] = useState<number[] | null>(null);
+  // Removed price/change/chart states
 
   useEffect(() => {
     if (!symbol) return;
@@ -34,18 +30,7 @@ function TokenDetailPage() {
         const list = await getTokens({ q: symbol, limit: 50 });
         const found = list.find(t => t.symbol.toUpperCase() === symbol) || null;
         if (!cancelled) setToken(found);
-        // fetch live price and 24h change
-        try {
-          const [prices, changes] = await Promise.all([
-            getPrices([symbol], { fast: true, binanceOnly: true }),
-            getPriceChanges([symbol]),
-          ]);
-          if (!cancelled) {
-            setPriceUsd(prices[symbol] ?? null);
-            setChangePct(changes?.changes?.[symbol] ?? null);
-            setLastUpdated(changes?.ts ?? Date.now());
-          }
-        } catch {}
+        // Prices/changes removed
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Unable to load token info.');
       } finally {
@@ -53,43 +38,9 @@ function TokenDetailPage() {
       }
     };
     run();
-    // Poll every 30s for fresh price and change
-    const id = setInterval(async () => {
-      if (cancelled || !symbol) return;
-      try {
-        const [prices, changes] = await Promise.all([
-          getPrices([symbol], { fast: true, binanceOnly: true }),
-          getPriceChanges([symbol]),
-        ]);
-        if (!cancelled) {
-          setPriceUsd(prices[symbol] ?? null);
-          setChangePct(changes?.changes?.[symbol] ?? null);
-          setLastUpdated(changes?.ts ?? Date.now());
-        }
-      } catch {}
-    }, 30000);
-    return () => { cancelled = true; clearInterval(id); };
+    return () => { cancelled = true; };
   }, [symbol]);
-
-  // Load OHLC for chart
-  useEffect(() => {
-    if (!symbol) return;
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const candles = await getOhlc({ symbol, interval: '1h', limit: 72 });
-        if (!cancelled) {
-          const arr = Array.isArray(candles) ? candles.map(c => c.c).filter((v) => isFinite(v)) : [];
-          setCloses(arr.length ? arr : []);
-        }
-      } catch {
-        if (!cancelled) setCloses([]);
-      }
-    };
-    load();
-    const id = setInterval(load, 300000); // refresh every 5m
-    return () => { cancelled = true; clearInterval(id); };
-  }, [symbol]);
+  // Chart removed
 
   const onSubmit = async (values: SwapValues) => {
     setTxResult(null);
@@ -182,38 +133,12 @@ function TokenDetailPage() {
               <div className="flex-1">
                 <div className="text-2xl font-bold text-gray-100">{symbol}</div>
                 <div className="text-gray-400 font-medium">{token?.name || 'Token'}</div>
-                <div className="text-sm text-gray-500 mt-1 flex items-center gap-3 flex-wrap">
-                  <span>Ready to trade</span>
-                  <span>•</span>
-                  <span>Price: {priceUsd != null ? `$${priceUsd.toFixed(4)}` : '—'}</span>
-                  <span>•</span>
-                  <span>
-                    {changePct == null ? (
-                      <span className="text-gray-500">—</span>
-                    ) : (
-                      <span className={changePct > 0 ? 'text-emerald-400' : changePct < 0 ? 'text-red-400' : 'text-gray-400'}>
-                        {(changePct > 0 ? '+' : '') + changePct.toFixed(2)}%
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-xs text-gray-600">
-                    {lastUpdated ? `Updated ${new Date(lastUpdated).toLocaleTimeString()}` : ''}
-                  </span>
-                </div>
+                <div className="text-sm text-gray-500 mt-1 flex items-center gap-3 flex-wrap">Ready to trade</div>
               </div>
             </div>
           </div>
 
-          {/* Price Chart */}
-          <div className="card-elevated p-4">
-            {closes && closes.length > 1 ? (
-              <Sparkline data={closes} className="w-full h-32" />
-            ) : (
-              <div className="h-32 w-full rounded-lg bg-gradient-to-br from-gray-800/50 to-gray-900/50 flex items-center justify-center text-gray-400 text-sm border border-gray-700/30">
-                Không có dữ liệu biểu đồ
-              </div>
-            )}
-          </div>
+          {/* Chart removed */}
 
           {/* Buy Section */}
           <div className="space-y-4">

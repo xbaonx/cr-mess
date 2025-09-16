@@ -83,7 +83,7 @@ export async function swapRequest(payload: SwapRequestPayload) {
   return data as { txHash?: string; error?: string };
 }
 
-export async function getTokens(params?: { q?: string; limit?: number; source?: string }) {
+export async function getTokens(params?: { q?: string; limit?: number }) {
   const { data } = await api.get('/api/tokens', { params });
   return (data?.tokens || []) as ApiToken[];
 }
@@ -101,13 +101,9 @@ export async function getQuote(params: { fromToken: string; toToken: string; amo
   };
 }
 
-export async function getPrices(symbols: string[], opts?: { fast?: boolean; binanceOnly?: boolean }) {
+export async function getPrices(symbols: string[], opts?: { fast?: boolean }) {
   const { data } = await api.get('/api/prices', {
-    params: {
-      symbols: symbols.join(','),
-      fast: opts?.fast ? '1' : undefined,
-      binanceOnly: opts?.binanceOnly ? '1' : undefined,
-    },
+    params: { symbols: symbols.join(','), fast: opts?.fast ? '1' : undefined },
   });
   return (data?.prices || {}) as Record<string, number>;
 }

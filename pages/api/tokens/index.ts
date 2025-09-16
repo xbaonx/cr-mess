@@ -1,8 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getTokensMap, getChainId } from '@/lib/server/oneinch';
-import { getBinancePrices } from '@/lib/server/external';
+import { getUsdPrices } from '@/lib/server/external';
 import { readTokenCatalog, writeTokenCatalog, type SimpleToken } from '@/lib/server/tokenStore';
-import { buildBinanceTokenCatalog } from '@/lib/server/binanceTokens';
 
 export type ApiToken = {
   symbol: string;
@@ -22,9 +21,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const limit = Math.min(Math.max(parseInt(String(req.query.limit || '200')) || 200, 1), 1000);
 
     const chainId = getChainId();
-    const qSourceRaw = String(req.query.source || '').toLowerCase();
-    const qSource = qSourceRaw ? qSourceRaw.split(':')[0] : '';
-    const source = (qSource || process.env.TOKEN_SOURCE || 'binance').toLowerCase();
     // In-memory cache by chainId
     const g = globalThis as any;
     if (!g.__tokenCatalog) g.__tokenCatalog = {};
@@ -32,20 +28,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let cached: { tokens: SimpleToken[]; ts: number } | undefined = g.__tokenCatalog[chainId];
 
     async function refreshCatalog(): Promise<SimpleToken[]> {
-      let fresh: SimpleToken[] = [];
-      if (source === 'oneinch') {
-        const map = await getTokensMap(chainId);
-        fresh = Object.values(map || {}).map((t: any) => ({
-          symbol: String(t.symbol || ''),
-          name: String(t.name || ''),
-          address: String(t.address || ''),
-          decimals: Number(t.decimals || 18),
-          logoURI: t.logoURI,
-        }));
-      } else {
-        // Default: Binance-based catalog (symbols that trade against USDT)
-        fresh = await buildBinanceTokenCatalog();
-      }
+      const map = await getTokensMap(chainId);
+      const fresh: SimpleToken[] = Object.values(map || {}).map((t: any) => ({
+        symbol: String(t.symbol || ''),
+        name: String(t.name || ''),
+        address: String(t.address || ''),
+        decimals: Number(t.decimals || 18),
+        logoURI: t.logoURI,
+      }));
       await writeTokenCatalog(fresh, chainId);
       g.__tokenCatalog[chainId] = { tokens: fresh, ts: Date.now() };
       return fresh;
@@ -55,30 +45,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       // Try in-memory, then file, else rebuild
       if (cached && Date.now() - cached.ts < TTL_MS) {
-        const looksBinanceCached = cached.tokens.every((t: any) => String(t.address || '').startsWith('BINANCE:'));
-        const expectBinanceCached = source !== 'oneinch';
-        if ((expectBinanceCached && !looksBinanceCached) || (!expectBinanceCached && looksBinanceCached)) {
-          base = await refreshCatalog();
-        } else {
-          base = cached.tokens;
-        }
+        base = cached.tokens;
       } else {
         const file = await readTokenCatalog(chainId);
         if (file && Array.isArray(file.tokens) && file.tokens.length > 0) {
-          const looksBinance = file.tokens.every((t: any) => String(t.address || '').startsWith('BINANCE:'));
-          const expectBinance = source !== 'oneinch';
-          // If mismatch (e.g., switched source), rebuild immediately and return fresh in this request
-          if ((expectBinance && !looksBinance) || (!expectBinance && looksBinance)) {
-            base = await refreshCatalog();
-          } else {
-            base = file.tokens;
-            // refresh async if stale
-            if (!cached || Date.now() - (cached?.ts || 0) >= TTL_MS) {
-              refreshCatalog().catch(() => {});
-            }
-            // hydrate memory
-            g.__tokenCatalog[chainId] = { tokens: base, ts: Date.now() };
+          base = file.tokens;
+          // refresh async if stale
+          if (!cached || Date.now() - (cached?.ts || 0) >= TTL_MS) {
+            refreshCatalog().catch(() => {});
           }
+          // hydrate memory
+          g.__tokenCatalog[chainId] = { tokens: base, ts: Date.now() };
         } else {
           base = await refreshCatalog();
         }
@@ -110,24 +87,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const limited = list.slice(0, limit);
-    // Enrich with prices from Binance only
+    // Enrich with prices (Binance + 1inch fallback) with fast timeouts
     try {
       const symbols = Array.from(new Set(limited.map((t) => t.symbol.toUpperCase())));
-      const priceMap = await getBinancePrices(symbols);
+      const priceMap = await getUsdPrices(symbols, { totalTimeoutMs: 3000, perCallTimeoutMs: 1000, maxFallback: 8 });
       for (const t of limited) {
         const key = t.symbol.toUpperCase();
         (t as any).priceUsd = priceMap[key] ?? 0;
       }
     } catch {}
 
-    // Cache policy: if client specifies ?source=..., bypass CDN caching to reflect changes immediately
-    if (qSource) {
-      res.setHeader('Cache-Control', 'no-store');
-    } else {
-      // Short cache for default calls
-      res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');
-    }
-    res.setHeader('X-Token-Source', source);
+    // Encourage caching of token list (content changes infrequently)
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=600, stale-while-revalidate=3600');
     return res.status(200).json({ tokens: limited });
   } catch (err: any) {
     console.error('tokens list error', err);

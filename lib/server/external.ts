@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { CANONICAL_SYMBOL_OVERRIDES } from '@/lib/server/binanceWhitelist';
 import type { TokenInfo } from '@/lib/server/storage';
 import { getQuote as oneInchGetQuote, resolveTokenBySymbol, toWei, getChainId } from '@/lib/server/oneinch';
 
@@ -18,24 +17,6 @@ const stableUsd: Record<string, number> = {
 
 function sleep(ms: number) { return new Promise((r) => setTimeout(r, ms)); }
 
-// Try multiple Binance endpoints to mitigate regional/network hiccups
-const BINANCE_APIS = Array.from(new Set([
-  BINANCE_API,
-  'https://api1.binance.com',
-  'https://api2.binance.com',
-  'https://api3.binance.com',
-]));
-
-async function binanceGet<T = any>(pathAndQuery: string, timeoutMs: number): Promise<T | null> {
-  for (const base of BINANCE_APIS) {
-    try {
-      const { data } = await axios.get(`${base}${pathAndQuery}`, { timeout: timeoutMs });
-      return data as T;
-    } catch {}
-  }
-  return null;
-}
-
 export async function getBinance24hChanges(symbols: string[]): Promise<Record<string, number>> {
   const unique = Array.from(new Set(symbols.map((s) => s.toUpperCase())));
   const result: Record<string, number> = {};
@@ -49,7 +30,6 @@ export async function getBinance24hChanges(symbols: string[]): Promise<Record<st
     WAVAX: 'AVAX',
     WFTM: 'FTM',
     WBETH: 'ETH',
-    ...CANONICAL_SYMBOL_OVERRIDES,
   };
   const expanded = new Set<string>();
   const originals: Record<string, Set<string>> = {};
@@ -62,8 +42,9 @@ export async function getBinance24hChanges(symbols: string[]): Promise<Record<st
   }
   const pairs = Array.from(expanded).map((s) => `${s}USDT`);
   const payload = encodeURIComponent(JSON.stringify(pairs));
+  const url = `${BINANCE_API}/api/v3/ticker/24hr?symbols=${payload}`;
   try {
-    const data = await binanceGet<any[]>(`/api/v3/ticker/24hr?symbols=${payload}`, 8000);
+    const { data } = await axios.get(url, { timeout: 8000 });
     if (Array.isArray(data)) {
       for (const item of data) {
         const sym = String(item.symbol || '').replace(/USDT$/, '');
@@ -169,7 +150,6 @@ export async function getBinancePrices(symbols: string[]): Promise<Record<string
       WAVAX: 'AVAX',
       WFTM: 'FTM',
       WBETH: 'ETH',
-      ...CANONICAL_SYMBOL_OVERRIDES,
     };
     const expanded = new Set<string>();
     const originals: Record<string, Set<string>> = {};
@@ -182,7 +162,8 @@ export async function getBinancePrices(symbols: string[]): Promise<Record<string
     }
     const pairs = Array.from(expanded).map((s) => `${s}USDT`);
     const payload = encodeURIComponent(JSON.stringify(pairs));
-    const data = await binanceGet<any[]>(`/api/v3/ticker/price?symbols=${payload}`, 8000);
+    const url = `${BINANCE_API}/api/v3/ticker/price?symbols=${payload}`;
+    const { data } = await axios.get(url, { timeout: 8000 });
     if (Array.isArray(data)) {
       for (const item of data) {
         const sym = String(item.symbol || '').replace(/USDT$/, '');
@@ -204,44 +185,7 @@ export async function getBinancePrices(symbols: string[]): Promise<Record<string
       }
     }
   } catch (e) {
-    // Fallback: use 24hr ticker to derive lastPrice when /ticker/price fails
-    try {
-      const aliasMap: Record<string, string> = {
-        WBNB: 'BNB', WETH: 'ETH', WBTC: 'BTC', BTCB: 'BTC', WMATIC: 'MATIC', WAVAX: 'AVAX', WFTM: 'FTM', WBETH: 'ETH',
-        ...CANONICAL_SYMBOL_OVERRIDES,
-      };
-      const expanded = new Set<string>();
-      const originals: Record<string, Set<string>> = {};
-      for (const s of missing) {
-        expanded.add(s);
-        const canonical = aliasMap[s] || (s.startsWith('W') && s.length > 3 ? s.slice(1) : s);
-        if (canonical && canonical !== s) expanded.add(canonical);
-        if (!originals[canonical]) originals[canonical] = new Set();
-        originals[canonical].add(s);
-      }
-      const pairs = Array.from(expanded).map((s) => `${s}USDT`);
-      const payload = encodeURIComponent(JSON.stringify(pairs));
-      const d2 = await binanceGet<any[]>(`/api/v3/ticker/24hr?symbols=${payload}`, 8000);
-      if (Array.isArray(d2)) {
-        for (const item of d2) {
-          const sym = String(item.symbol || '').replace(/USDT$/, '');
-          const price = parseFloat(String(item.lastPrice || item.weightedAvgPrice || '0'));
-          if (isFinite(price) && price > 0) {
-            map[sym] = price;
-            priceCache[sym] = { ts: now, price };
-          }
-        }
-        for (const [canonical, origSet] of Object.entries(originals)) {
-          const price = map[canonical];
-          if (isFinite(price)) {
-            for (const orig of Array.from(origSet)) {
-              map[orig] = price;
-              priceCache[orig] = { ts: now, price };
-            }
-          }
-        }
-      }
-    } catch {}
+    // ignore pricing errors; leave missing prices as 0
   }
   return map;
 }

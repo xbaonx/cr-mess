@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import TokenList from '@components/TokenList';
 import Notification from '@components/Notification';
 import { TokenListSkeleton } from '@components/SkeletonLoader';
-import { getWalletInfo, WalletInfoResponse, getTokens, getPrices, getPriceChanges } from '@utils/api';
+import { getWalletInfo, WalletInfoResponse, getTokens } from '@utils/api';
 import { useUserId, withUidPath } from '@utils/useUserId';
 import useSWR from 'swr';
 
@@ -13,7 +13,7 @@ function DashboardPage() {
   const [address, setAddress] = useState<string | null>(null);
   const [tokens, setTokens] = useState<WalletInfoResponse['tokens']>([]);
   const [logoMap, setLogoMap] = useState<Record<string, string>>({});
-  const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  // No price/changes display on Dashboard
 
   // Primary data: wallet info and market tokens
   const { data: walletData, isLoading: walletLoading } = useSWR(uid ? ['wallet', uid] : null, () => getWalletInfo(uid!) , {
@@ -47,22 +47,7 @@ function DashboardPage() {
     ...t,
     logoUrl: t.logoUrl || logoMap[t.symbol?.toUpperCase?.()] || undefined,
   }));
-  const totalValue = displayTokens.reduce((acc, t) => acc + (parseFloat(t.balance || '0') * (t.priceUsd || 0)), 0);
-
-  // Build symbol list for price/changes
-  const symbols = useMemo(() => Array.from(new Set(displayTokens.map(t => t.symbol.toUpperCase()))), [displayTokens]);
-  const { data: priceMap } = useSWR(symbols.length ? ['prices', symbols.join(','), 'binanceOnly'] : null, () => getPrices(symbols, { fast: true, binanceOnly: true }), {
-    revalidateOnFocus: false,
-    refreshInterval: 30000,
-  });
-  const { data: changeResp } = useSWR(symbols.length ? ['changes', symbols.join(',')] : null, () => getPriceChanges(symbols), {
-    revalidateOnFocus: false,
-    refreshInterval: 30000,
-  });
-  const changeMap = changeResp?.changes || {};
-  useEffect(() => {
-    if (changeResp?.ts) setLastUpdated(changeResp.ts);
-  }, [changeResp?.ts]);
+  // Removed prices/changes from Dashboard
 
   return (
     <div className="space-y-6 animate-slide-in">
@@ -70,10 +55,7 @@ function DashboardPage() {
         <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
           Portfolio
         </h1>
-        <div className="text-right">
-          <div className="text-sm text-gray-400">${totalValue.toFixed(2)}</div>
-          <div className="text-xs text-gray-500">{lastUpdated ? `Updated ${new Date(lastUpdated).toLocaleTimeString()}` : ''}</div>
-        </div>
+        <div className="text-sm text-gray-400">{displayTokens.length} tokens</div>
       </div>
 
       {!uid && (
@@ -118,16 +100,7 @@ function DashboardPage() {
           <TokenListSkeleton />
         ) : (
           <div className="animate-fade-in">
-            {/* Enrich priceUsd from live priceMap if available */}
-            <TokenList 
-              tokens={displayTokens.map(t => ({
-                ...t,
-                priceUsd: (priceMap && priceMap[t.symbol.toUpperCase()]) || t.priceUsd || 0,
-              }))} 
-              showTotal 
-              changeMap={changeMap}
-              lastUpdatedTs={lastUpdated}
-            />
+            <TokenList tokens={displayTokens} />
           </div>
         )}
       </div>
