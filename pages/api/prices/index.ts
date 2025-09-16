@@ -12,7 +12,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .filter(Boolean);
     if (symbols.length === 0) return res.status(400).json({ message: 'No valid symbols' });
 
-    const prices = await getUsdPrices(symbols);
+    const fast = String(req.query.fast || '0') === '1';
+    const prices = await getUsdPrices(symbols, fast ? { totalTimeoutMs: 3000, perCallTimeoutMs: 1000, maxFallback: 8 } : undefined);
+    // Encourage CDN/proxy caching for a short duration
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=15, stale-while-revalidate=30');
     return res.status(200).json({ prices });
   } catch (err: any) {
     console.error('prices error', err);

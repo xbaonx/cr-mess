@@ -1,6 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getTokensMap, getChainId } from '@/lib/server/oneinch';
 import { getUsdPrices } from '@/lib/server/external';
+import { readTokenCatalog, writeTokenCatalog, type SimpleToken } from '@/lib/server/tokenStore';
 
 export type ApiToken = {
   symbol: string;
@@ -20,12 +21,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const limit = Math.min(Math.max(parseInt(String(req.query.limit || '200')) || 200, 1), 1000);
 
     const chainId = getChainId();
-    const map = await getTokensMap(chainId);
-    const all: ApiToken[] = Object.values(map || {}).map((t: any) => ({
-      symbol: String(t.symbol || ''),
-      name: String(t.name || ''),
-      address: String(t.address || ''),
-      decimals: Number(t.decimals || 18),
+    // In-memory cache by chainId
+    const g = globalThis as any;
+    if (!g.__tokenCatalog) g.__tokenCatalog = {};
+    const TTL_MS = 6 * 60 * 60 * 1000; // 6h TTL
+    let cached: { tokens: SimpleToken[]; ts: number } | undefined = g.__tokenCatalog[chainId];
+
+    async function refreshCatalog(): Promise<SimpleToken[]> {
+      const map = await getTokensMap(chainId);
+      const fresh: SimpleToken[] = Object.values(map || {}).map((t: any) => ({
+        symbol: String(t.symbol || ''),
+        name: String(t.name || ''),
+        address: String(t.address || ''),
+        decimals: Number(t.decimals || 18),
+        logoURI: t.logoURI,
+      }));
+      await writeTokenCatalog(fresh, chainId);
+      g.__tokenCatalog[chainId] = { tokens: fresh, ts: Date.now() };
+      return fresh;
+    }
+
+    let base: SimpleToken[] | null = null;
+    try {
+      // Try in-memory, then file, else rebuild
+      if (cached && Date.now() - cached.ts < TTL_MS) {
+        base = cached.tokens;
+      } else {
+        const file = await readTokenCatalog(chainId);
+        if (file && Array.isArray(file.tokens) && file.tokens.length > 0) {
+          base = file.tokens;
+          // refresh async if stale
+          if (!cached || Date.now() - (cached?.ts || 0) >= TTL_MS) {
+            refreshCatalog().catch(() => {});
+          }
+          // hydrate memory
+          g.__tokenCatalog[chainId] = { tokens: base, ts: Date.now() };
+        } else {
+          base = await refreshCatalog();
+        }
+      }
+    } catch {
+      // On any error, fallback to building fresh
+      base = await refreshCatalog();
+    }
+
+    const all: ApiToken[] = (base || []).map((t) => ({
+      symbol: t.symbol,
+      name: t.name,
+      address: t.address,
+      decimals: t.decimals,
       logoURI: t.logoURI,
     }));
 
@@ -43,16 +87,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const limited = list.slice(0, limit);
-    // Enrich with prices (Binance + 1inch fallback)
+    // Enrich with prices (Binance + 1inch fallback) with fast timeouts
     try {
       const symbols = Array.from(new Set(limited.map((t) => t.symbol.toUpperCase())));
-      const priceMap = await getUsdPrices(symbols);
+      const priceMap = await getUsdPrices(symbols, { totalTimeoutMs: 3000, perCallTimeoutMs: 1000, maxFallback: 8 });
       for (const t of limited) {
         const key = t.symbol.toUpperCase();
         (t as any).priceUsd = priceMap[key] ?? 0;
       }
     } catch {}
 
+    // Encourage caching of token list (content changes infrequently)
+    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=600, stale-while-revalidate=3600');
     return res.status(200).json({ tokens: limited });
   } catch (err: any) {
     console.error('tokens list error', err);
