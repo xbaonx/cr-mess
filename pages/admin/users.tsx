@@ -18,7 +18,7 @@ function useLocalStorage(key: string, initial: string = '') {
 function AdminUsersPage() {
   const [token, setToken] = useLocalStorage('admin_api_token', '');
   const [q, setQ] = React.useState('');
-  const [limit, setLimit] = React.useState('200');
+  const [limit, setLimit] = React.useState('5000');
   const [uids, setUids] = React.useState<string[]>([]);
   const [selected, setSelected] = React.useState<string | null>(null);
   const [detail, setDetail] = React.useState<any>(null);
@@ -27,6 +27,14 @@ function AdminUsersPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [openDelete, setOpenDelete] = React.useState(false);
   const headers: Record<string, string> = token ? { 'x-admin-token': token } : {};
+
+  // Auto-load all users when admin token is available
+  React.useEffect(() => {
+    if (token && token.trim()) {
+      search();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const search = async () => {
     setLoading(true); setError(null); setDetail(null); setSelected(null);
