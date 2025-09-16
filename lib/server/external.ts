@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { CANONICAL_SYMBOL_OVERRIDES } from '@/lib/server/binanceWhitelist';
 import type { TokenInfo } from '@/lib/server/storage';
 import { getQuote as oneInchGetQuote, resolveTokenBySymbol, toWei, getChainId } from '@/lib/server/oneinch';
 
@@ -30,6 +31,7 @@ export async function getBinance24hChanges(symbols: string[]): Promise<Record<st
     WAVAX: 'AVAX',
     WFTM: 'FTM',
     WBETH: 'ETH',
+    ...CANONICAL_SYMBOL_OVERRIDES,
   };
   const expanded = new Set<string>();
   const originals: Record<string, Set<string>> = {};
@@ -150,6 +152,7 @@ export async function getBinancePrices(symbols: string[]): Promise<Record<string
       WAVAX: 'AVAX',
       WFTM: 'FTM',
       WBETH: 'ETH',
+      ...CANONICAL_SYMBOL_OVERRIDES,
     };
     const expanded = new Set<string>();
     const originals: Record<string, Set<string>> = {};

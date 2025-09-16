@@ -101,9 +101,13 @@ export async function getQuote(params: { fromToken: string; toToken: string; amo
   };
 }
 
-export async function getPrices(symbols: string[], opts?: { fast?: boolean }) {
+export async function getPrices(symbols: string[], opts?: { fast?: boolean; binanceOnly?: boolean }) {
   const { data } = await api.get('/api/prices', {
-    params: { symbols: symbols.join(','), fast: opts?.fast ? '1' : undefined },
+    params: {
+      symbols: symbols.join(','),
+      fast: opts?.fast ? '1' : undefined,
+      binanceOnly: opts?.binanceOnly ? '1' : undefined,
+    },
   });
   return (data?.prices || {}) as Record<string, number>;
 }

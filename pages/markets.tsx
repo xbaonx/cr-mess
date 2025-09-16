@@ -12,6 +12,7 @@ function MarketsPage() {
   const [priceMap, setPriceMap] = useState<Record<string, number>>({});
   const [changeMap, setChangeMap] = useState<Record<string, number>>({});
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const BINANCE_ONLY = (process.env.NEXT_PUBLIC_BINANCE_ONLY === '1' || process.env.NEXT_PUBLIC_BINANCE_ONLY === 'true');
 
   useEffect(() => {
     let cancelled = false;
@@ -20,21 +21,37 @@ function MarketsPage() {
       setError(null);
       try {
         const list = await getTokens({ limit: 50 });
-        if (!cancelled) setTokens(list);
         // Fetch prices for these symbols
         const symbols = Array.from(new Set(list.map((t) => t.symbol.toUpperCase())));
         if (symbols.length > 0) {
           try {
-            const [prices, changes] = await Promise.all([
-              getPrices(symbols),
-              getPriceChanges(symbols),
-            ]);
-            if (!cancelled) {
-              setPriceMap(prices);
-              setChangeMap(changes.changes || {});
-              setLastUpdated(changes.ts || Date.now());
+            if (BINANCE_ONLY) {
+              const prices = await getPrices(symbols, { fast: true, binanceOnly: true });
+              // Filter tokens to only those that have a Binance price > 0
+              const filtered = list.filter((t) => (prices[t.symbol.toUpperCase()] ?? 0) > 0);
+              const fsyms = Array.from(new Set(filtered.map((t) => t.symbol.toUpperCase())));
+              const changes = fsyms.length > 0 ? await getPriceChanges(fsyms) : { changes: {}, ts: Date.now() };
+              if (!cancelled) {
+                setTokens(filtered);
+                setPriceMap(prices);
+                setChangeMap(changes.changes || {});
+                setLastUpdated(changes.ts || Date.now());
+              }
+            } else {
+              const [prices, changes] = await Promise.all([
+                getPrices(symbols, { fast: true }),
+                getPriceChanges(symbols),
+              ]);
+              if (!cancelled) {
+                setTokens(list);
+                setPriceMap(prices);
+                setChangeMap(changes.changes || {});
+                setLastUpdated(changes.ts || Date.now());
+              }
             }
           } catch {}
+        } else {
+          if (!cancelled) setTokens(list);
         }
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Unable to load tokens.');
@@ -55,7 +72,7 @@ function MarketsPage() {
       if (cancelled || symbols.length === 0) return;
       try {
         const [prices, changes] = await Promise.all([
-          getPrices(symbols),
+          getPrices(symbols, { fast: true, binanceOnly: BINANCE_ONLY }),
           getPriceChanges(symbols),
         ]);
         if (!cancelled) {
@@ -101,9 +118,17 @@ function MarketsPage() {
   return (
     <div className="space-y-6 animate-slide-in">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-          Markets
-        </h1>
+        <div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            Markets
+          </h1>
+          {BINANCE_ONLY && (
+            <div className="mt-1 inline-flex items-center gap-2 text-xs text-amber-400 bg-amber-400/10 px-2 py-1 rounded">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-400"></span>
+              Binance-only mode
+            </div>
+          )}
+        </div>
         <div className="text-right">
           <div className="text-sm text-gray-400">{tokens.length} tokens</div>
           <div className="text-xs text-gray-500">{lastUpdated ? `Updated ${new Date(lastUpdated).toLocaleTimeString()}` : '—'}</div>

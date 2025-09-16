@@ -1,5 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { getUsdPrices } from '@/lib/server/external';
+import { getUsdPrices, getBinancePrices } from '@/lib/server/external';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') return res.status(405).json({ message: 'Method Not Allowed' });
@@ -13,7 +13,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (symbols.length === 0) return res.status(400).json({ message: 'No valid symbols' });
 
     const fast = String(req.query.fast || '0') === '1';
-    const prices = await getUsdPrices(symbols, fast ? { totalTimeoutMs: 3000, perCallTimeoutMs: 1000, maxFallback: 8 } : undefined);
+    const binanceOnly = String(req.query.binanceOnly || '0') === '1';
+    const prices = binanceOnly
+      ? await getBinancePrices(symbols)
+      : await getUsdPrices(symbols, fast ? { totalTimeoutMs: 3000, perCallTimeoutMs: 1000, maxFallback: 8 } : undefined);
     // Encourage CDN/proxy caching for a short duration
     res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=15, stale-while-revalidate=30');
     return res.status(200).json({ prices });
