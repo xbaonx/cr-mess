@@ -22,7 +22,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const limit = Math.min(Math.max(parseInt(String(req.query.limit || '200')) || 200, 1), 1000);
 
     const chainId = getChainId();
-    const qSource = String(req.query.source || '').toLowerCase();
+    const qSourceRaw = String(req.query.source || '').toLowerCase();
+    const qSource = qSourceRaw ? qSourceRaw.split(':')[0] : '';
     const source = (qSource || process.env.TOKEN_SOURCE || 'binance').toLowerCase();
     // In-memory cache by chainId
     const g = globalThis as any;
@@ -119,8 +120,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     } catch {}
 
-    // Shorten cache to reflect source switch quickly
-    res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');
+    // Cache policy: if client specifies ?source=..., bypass CDN caching to reflect changes immediately
+    if (qSource) {
+      res.setHeader('Cache-Control', 'no-store');
+    } else {
+      // Short cache for default calls
+      res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=30, stale-while-revalidate=300');
+    }
     res.setHeader('X-Token-Source', source);
     return res.status(200).json({ tokens: limited });
   } catch (err: any) {

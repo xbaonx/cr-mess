@@ -28,7 +28,7 @@ export default function TokenPicker({ label = 'Token', value, onChange, placehol
     const run = async () => {
       setLoading(true);
       try {
-        const list = await getTokens({ q: debounced || undefined, limit: 300 });
+        const list = await getTokens({ q: debounced || undefined, limit: 300, source: 'binance' });
         if (!cancelled) setTokens(list);
       } catch {
         if (!cancelled) setTokens([]);
