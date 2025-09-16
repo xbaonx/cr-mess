@@ -51,7 +51,7 @@ function DashboardPage() {
 
   // Build symbol list for price/changes
   const symbols = useMemo(() => Array.from(new Set(displayTokens.map(t => t.symbol.toUpperCase()))), [displayTokens]);
-  const { data: priceMap } = useSWR(symbols.length ? ['prices', symbols.join(',')] : null, () => getPrices(symbols), {
+  const { data: priceMap } = useSWR(symbols.length ? ['prices', symbols.join(','), 'binanceOnly'] : null, () => getPrices(symbols, { fast: true, binanceOnly: true }), {
     revalidateOnFocus: false,
     refreshInterval: 30000,
   });

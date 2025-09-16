@@ -37,7 +37,7 @@ function TokenDetailPage() {
         // fetch live price and 24h change
         try {
           const [prices, changes] = await Promise.all([
-            getPrices([symbol]),
+            getPrices([symbol], { fast: true, binanceOnly: true }),
             getPriceChanges([symbol]),
           ]);
           if (!cancelled) {
@@ -58,7 +58,7 @@ function TokenDetailPage() {
       if (cancelled || !symbol) return;
       try {
         const [prices, changes] = await Promise.all([
-          getPrices([symbol]),
+          getPrices([symbol], { fast: true, binanceOnly: true }),
           getPriceChanges([symbol]),
         ]);
         if (!cancelled) {

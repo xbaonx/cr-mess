@@ -1,7 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { getTokensMap, getChainId } from '@/lib/server/oneinch';
-import { getUsdPrices } from '@/lib/server/external';
+import { getBinancePrices } from '@/lib/server/external';
 import { readTokenCatalog, writeTokenCatalog, type SimpleToken } from '@/lib/server/tokenStore';
+import { buildBinanceTokenCatalog } from '@/lib/server/binanceTokens';
 
 export type ApiToken = {
   symbol: string;
@@ -28,14 +29,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let cached: { tokens: SimpleToken[]; ts: number } | undefined = g.__tokenCatalog[chainId];
 
     async function refreshCatalog(): Promise<SimpleToken[]> {
-      const map = await getTokensMap(chainId);
-      const fresh: SimpleToken[] = Object.values(map || {}).map((t: any) => ({
-        symbol: String(t.symbol || ''),
-        name: String(t.name || ''),
-        address: String(t.address || ''),
-        decimals: Number(t.decimals || 18),
-        logoURI: t.logoURI,
-      }));
+      const source = (process.env.TOKEN_SOURCE || 'binance').toLowerCase();
+      let fresh: SimpleToken[] = [];
+      if (source === 'oneinch') {
+        const map = await getTokensMap(chainId);
+        fresh = Object.values(map || {}).map((t: any) => ({
+          symbol: String(t.symbol || ''),
+          name: String(t.name || ''),
+          address: String(t.address || ''),
+          decimals: Number(t.decimals || 18),
+          logoURI: t.logoURI,
+        }));
+      } else {
+        // Default: Binance-based catalog (symbols that trade against USDT)
+        fresh = await buildBinanceTokenCatalog();
+      }
       await writeTokenCatalog(fresh, chainId);
       g.__tokenCatalog[chainId] = { tokens: fresh, ts: Date.now() };
       return fresh;
@@ -87,10 +95,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     const limited = list.slice(0, limit);
-    // Enrich with prices (Binance + 1inch fallback) with fast timeouts
+    // Enrich with prices from Binance only
     try {
       const symbols = Array.from(new Set(limited.map((t) => t.symbol.toUpperCase())));
-      const priceMap = await getUsdPrices(symbols, { totalTimeoutMs: 3000, perCallTimeoutMs: 1000, maxFallback: 8 });
+      const priceMap = await getBinancePrices(symbols);
       for (const t of limited) {
         const key = t.symbol.toUpperCase();
         (t as any).priceUsd = priceMap[key] ?? 0;
