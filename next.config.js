@@ -5,21 +5,6 @@ const nextConfig = {
   reactStrictMode: true,
   swcMinify: true,
   output: 'standalone',
-  async redirects() {
-    const portal = process.env.NEXT_PUBLIC_ADMIN_PORTAL_URL || 'http://localhost:3100';
-    return [
-      {
-        source: '/admin',
-        destination: `${portal}`,
-        permanent: false,
-      },
-      {
-        source: '/admin/:path*',
-        destination: `${portal}/:path*`,
-        permanent: false,
-      },
-    ];
-  },
   webpack: (config) => {
     config.resolve.alias = {
       ...(config.resolve.alias || {}),

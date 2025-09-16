@@ -1,10 +1,14 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import '../styles/globals.css';
+import 'antd/dist/reset.css';
+import { useRouter } from 'next/router';
 import BottomNav from '@components/BottomNav';
 import TopBar from '@components/TopBar';
 
 export default function MyApp({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const isAdmin = router.pathname.startsWith('/admin');
   return (
     <>
       <Head>
@@ -19,13 +23,18 @@ export default function MyApp({ Component, pageProps }: AppProps) {
         <meta property="og:type" content="website" />
         <meta property="og:site_name" content="F-wallet" />
       </Head>
-      <div className="min-h-screen bg-gray-950">
-        <TopBar />
-        <main className="max-w-md mx-auto p-4 pb-20">
-          <Component {...pageProps} />
-        </main>
-        <BottomNav />
-      </div>
+      {isAdmin ? (
+        // Admin pages render their own full layout (Ant Design Shell)
+        <Component {...pageProps} />
+      ) : (
+        <div className="min-h-screen bg-gray-950">
+          <TopBar />
+          <main className="max-w-md mx-auto p-4 pb-20">
+            <Component {...pageProps} />
+          </main>
+          <BottomNav />
+        </div>
+      )}
     </>
   );
 }

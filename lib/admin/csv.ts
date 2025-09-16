@@ -1,5 +1,3 @@
-"use client";
-
 export function toCsv(rows: any[], columns?: string[]): string {
   if (!rows || rows.length === 0) return '';
   const keys = columns && columns.length ? columns : Array.from(new Set(rows.flatMap(r => Object.keys(r))));

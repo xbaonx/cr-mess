@@ -1,12 +1,11 @@
-"use client";
 import React from 'react';
-import Shell from '../../src/components/Shell';
+import Shell from '@/components/admin/Shell';
 import { Card, Table, Space, Button, Input, message, Typography } from 'antd';
-import { apiGet, apiPost } from '../../src/lib/api';
-import { useAdminToken } from '../../src/lib/useAdminToken';
-import { toCsv, downloadText } from '../../src/lib/csv';
+import { apiGet, apiPost } from '@/lib/admin/api';
+import { useAdminToken } from '@/lib/admin/useAdminToken';
+import { toCsv, downloadText } from '@/lib/admin/csv';
 
-export default function TokensPage() {
+export default function AdminTokensPage() {
   const { token } = useAdminToken();
   const [loading, setLoading] = React.useState(false);
   const [result, setResult] = React.useState<any>(null);

@@ -1,19 +1,16 @@
-"use client";
 import React from 'react';
-import Shell from '../../src/components/Shell';
+import Shell from '@/components/admin/Shell';
 import { Card, Row, Col, Statistic, Descriptions, Table, Space, Button, message } from 'antd';
-import { apiGet } from '../../src/lib/api';
-import { useAdminToken } from '../../src/lib/useAdminToken';
+import { apiGet } from '@/lib/admin/api';
 
-export default function HealthPage() {
-  const { token } = useAdminToken();
+export default function AdminHealthPage() {
   const [loading, setLoading] = React.useState(false);
   const [data, setData] = React.useState<any>(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      const d = await apiGet('/api/health', token);
+      const d = await apiGet('/api/health');
       setData(d);
     } catch (e: any) { message.error(e.message); }
     finally { setLoading(false); }

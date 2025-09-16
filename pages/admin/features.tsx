@@ -1,11 +1,10 @@
-"use client";
 import React from 'react';
-import Shell from '../../src/components/Shell';
+import Shell from '@/components/admin/Shell';
 import { Card, Switch, Button, Space, message } from 'antd';
-import { apiGet, apiPost } from '../../src/lib/api';
-import { useAdminToken } from '../../src/lib/useAdminToken';
+import { apiGet, apiPost } from '@/lib/admin/api';
+import { useAdminToken } from '@/lib/admin/useAdminToken';
 
-export default function FeaturesPage() {
+export default function AdminFeaturesPage() {
   const { token } = useAdminToken();
   const [loading, setLoading] = React.useState(false);
   const [features, setFeatures] = React.useState<any>({ enableBuy: true, enableSwap: true, maintenanceMode: false });

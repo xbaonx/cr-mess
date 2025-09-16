@@ -1,9 +1,8 @@
-"use client";
 import React from 'react';
-import Shell from '../../src/components/Shell';
+import Shell from '@/components/admin/Shell';
 import { Card, Space, Input, Button, Table, message, Tag } from 'antd';
-import { apiGet, apiPost } from '../../src/lib/api';
-import { useAdminToken } from '../../src/lib/useAdminToken';
+import { apiGet, apiPost } from '@/lib/admin/api';
+import { useAdminToken } from '@/lib/admin/useAdminToken';
 
 type Row = { wallet: string; chainId: string; token: string; amount: string };
 
@@ -23,7 +22,7 @@ function flattenLedger(payload: any): Row[] {
   return rows;
 }
 
-export default function ReferralPage() {
+export default function AdminReferralPage() {
   const { token } = useAdminToken();
   const [loading, setLoading] = React.useState(false);
   const [wallet, setWallet] = React.useState('');
