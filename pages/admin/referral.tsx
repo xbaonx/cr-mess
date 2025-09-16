@@ -1,4 +1,5 @@
 import React from 'react';
+import type { GetServerSideProps } from 'next';
 
 function useLocalStorage(key: string, initial: string = '') {
   const [val, setVal] = React.useState<string>(() => {
@@ -96,3 +97,13 @@ export default function AdminReferralPage() {
     </div>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  const portalUrl = process.env.NEXT_PUBLIC_ADMIN_PORTAL_URL || 'http://localhost:3100';
+  return {
+    redirect: {
+      destination: `${portalUrl}/referral`,
+      permanent: false,
+    },
+  };
+};

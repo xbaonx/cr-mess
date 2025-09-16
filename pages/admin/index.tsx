@@ -15,33 +15,25 @@ function useLocalStorage(key: string, initial: string = '') {
 
 function AdminIndexPage() {
   const [token, setToken] = useLocalStorage('admin_api_token', '');
+  const portalUrl = process.env.NEXT_PUBLIC_ADMIN_PORTAL_URL || 'http://localhost:3100';
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Admin Panel</h1>
+      <h1 className="text-2xl font-bold">Admin Panel (Deprecated)</h1>
 
       <div className="space-y-3 p-4 border rounded-md">
-        <div>
-          <label className="block text-sm font-medium mb-1">Admin API Token</label>
-          <input
-            className="w-full border rounded px-3 py-2"
-            placeholder="x-admin-token"
-            value={token}
-            onChange={e => setToken(e.target.value)}
-          />
-          <p className="text-xs text-gray-500 mt-1">Token sẽ được lưu trong LocalStorage của trình duyệt.</p>
-        </div>
+        <p className="text-sm text-gray-600">
+          Khu vực admin đã được tách sang Admin Portal riêng với giao diện chuyên nghiệp (Ant Design).
+          Vui lòng sử dụng Admin Portal mới để quản trị hệ thống.
+        </p>
+        <a href={portalUrl} target="_blank" rel="noreferrer" className="inline-block bg-blue-600 text-white px-4 py-2 rounded">Mở Admin Portal mới</a>
+        <p className="text-xs text-gray-500">Mặc định khi chạy local: http://localhost:3100. Có thể cấu hình qua NEXT_PUBLIC_ADMIN_PORTAL_URL.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Link href="/admin/referral" className="button-secondary text-center">Referral Admin</Link>
-        <Link href="/admin/tokens" className="button-secondary text-center">Tokens Admin</Link>
-        <Link href="/admin/users" className="button-secondary text-center">Users Admin</Link>
-        <Link href="/admin/features" className="button-secondary text-center">Features Admin</Link>
-      </div>
+      <div className="text-sm text-gray-500">Các trang admin cũ đã ngưng sử dụng tại product UI.</div>
 
       <div className="text-xs text-gray-500">
-        <p>- Các trang admin yêu cầu header <code>x-admin-token</code> khớp với biến môi trường <code>ADMIN_API_TOKEN</code>.</p>
+        <p>- Admin Portal mới vẫn yêu cầu header <code>x-admin-token</code> khớp với biến môi trường <code>ADMIN_API_TOKEN</code>.</p>
       </div>
     </div>
   );

@@ -9,3 +9,5 @@ yarn-error.log*
 .dockerignore
 .env
 .env.local
+admin
+admin/**

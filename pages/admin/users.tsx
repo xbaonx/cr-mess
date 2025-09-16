@@ -1,5 +1,6 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
+import type { GetServerSideProps } from 'next';
 import AdminLayout from '@components/AdminLayout';
 import CopyButton from '@components/CopyButton';
 import Modal from '@components/Modal';
@@ -177,3 +178,13 @@ function AdminUsersPage() {
 }
 
 export default dynamic(() => Promise.resolve(AdminUsersPage), { ssr: false });
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  const portalUrl = process.env.NEXT_PUBLIC_ADMIN_PORTAL_URL || 'http://localhost:3100';
+  return {
+    redirect: {
+      destination: `${portalUrl}/users`,
+      permanent: false,
+    },
+  };
+};

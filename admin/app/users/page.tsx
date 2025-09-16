@@ -1,9 +1,10 @@
 "use client";
 import React from 'react';
 import Shell from '../../src/components/Shell';
-import { Card, Table, Input, Space, Button, Drawer, Form, message } from 'antd';
+import { Card, Table, Input, Space, Button, Drawer, Form, message, Typography } from 'antd';
 import { apiGet, apiPost, apiDelete } from '../../src/lib/api';
 import { useAdminToken } from '../../src/lib/useAdminToken';
+import { toCsv, downloadText } from '../../src/lib/csv';
 
 export default function UsersPage() {
   const { token } = useAdminToken();
@@ -14,6 +15,7 @@ export default function UsersPage() {
   const [detail, setDetail] = React.useState<any>(null);
   const [uid, setUid] = React.useState<string>('');
   const [meta, setMeta] = React.useState<string>('{}');
+  const [selected, setSelected] = React.useState<React.Key[]>([]);
 
   const load = async (params?: { q?: string }) => {
     setLoading(true);
@@ -57,26 +59,60 @@ export default function UsersPage() {
 
   React.useEffect(() => { if (token) load(); }, [token]);
 
+  const data = React.useMemo(() => uids.map(u => ({ uid: u })), [uids]);
+
   const columns = [
-    { title: 'UID', dataIndex: 'uid', key: 'uid', render: (v: string) => <code>{v}</code> },
+    { title: '#', key: 'index', width: 60, render: (_: any, __: any, index: number) => index + 1 },
+    {
+      title: 'UID',
+      dataIndex: 'uid',
+      key: 'uid',
+      sorter: (a: any, b: any) => String(a.uid).localeCompare(String(b.uid)),
+      render: (v: string) => <Typography.Text copyable={{ text: v }}><code>{v}</code></Typography.Text>,
+    },
   ];
+
+  const onExportAll = () => {
+    const csv = toCsv(data, ['uid']);
+    downloadText('users.csv', csv);
+  };
+
+  const onExportSelected = () => {
+    const rows = data.filter(r => selected.includes(r.uid));
+    const csv = toCsv(rows, ['uid']);
+    downloadText('users_selected.csv', csv);
+  };
+
+  const onCopyAll = async () => {
+    try { await navigator.clipboard.writeText(uids.join('\n')); message.success('Copied'); } catch {}
+  };
+
+  const onCopySelected = async () => {
+    const rows = data.filter(r => selected.includes(r.uid));
+    try { await navigator.clipboard.writeText(rows.map(r => r.uid).join('\n')); message.success('Copied'); } catch {}
+  };
 
   return (
     <Shell>
       <Card title="Users" extra={(
-        <Space>
+        <Space wrap>
           <Input.Search placeholder="Search uid" value={q} onChange={(e) => setQ(e.target.value)} onSearch={(v) => load({ q: v })} allowClear />
           <Button onClick={() => load({ q })}>Reload</Button>
+          <Button onClick={onCopyAll}>Copy all</Button>
+          <Button onClick={onExportAll}>Export CSV</Button>
+          <Button disabled={selected.length === 0} onClick={onCopySelected}>Copy selected</Button>
+          <Button disabled={selected.length === 0} onClick={onExportSelected}>Export selected</Button>
         </Space>
       )}>
         <Table
           size="small"
-          rowKey={(r) => r}
+          rowKey={(r) => (r as any).uid}
           loading={loading}
-          dataSource={uids}
+          dataSource={data}
           columns={columns}
-          onRow={(record) => ({ onClick: () => openDetail(record as string) })}
-          pagination={{ pageSize: 20 }}
+          rowSelection={{ selectedRowKeys: selected, onChange: setSelected }}
+          onRow={(record) => ({ onClick: () => openDetail((record as any).uid) })}
+          pagination={{ pageSize: 20, showSizeChanger: true, pageSizeOptions: [20, 50, 100] }}
         />
 
         <Drawer title={uid} open={open} onClose={() => setOpen(false)} width={560}>

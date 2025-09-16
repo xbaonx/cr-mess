@@ -1,5 +1,6 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
+import type { GetServerSideProps } from 'next';
 import AdminLayout from '@components/AdminLayout';
 import Toggle from '@components/Toggle';
 
@@ -82,3 +83,13 @@ function AdminFeaturesPage() {
 }
 
 export default dynamic(() => Promise.resolve(AdminFeaturesPage), { ssr: false });
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  const portalUrl = process.env.NEXT_PUBLIC_ADMIN_PORTAL_URL || 'http://localhost:3100';
+  return {
+    redirect: {
+      destination: `${portalUrl}/features`,
+      permanent: false,
+    },
+  };
+};
