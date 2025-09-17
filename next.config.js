@@ -8,6 +8,8 @@ const nextConfig = {
   transpilePackages: [
     'antd',
     '@ant-design/icons',
+    '@ant-design/icons-svg',
+    '@ant-design/colors',
     'rc-util',
     'rc-table',
     'rc-tree',
