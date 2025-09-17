@@ -36,9 +36,15 @@ function BuyUSDTPage() {
     if (!address) return setError('Wallet address not available.');
     if (!isFinite(amt) || amt <= 0) return setError('Invalid amount.');
 
-    const url = `https://moonpay.com/buy?currency=usdt&amount=${encodeURIComponent(
-      amt.toString()
-    )}&walletAddress=${encodeURIComponent(address)}`;
+    // Build Transak consumer link (no API key). Let Transak auto-detect fiat currency.
+    const params = new URLSearchParams();
+    params.set('cryptoCurrencyCode', 'USDT');
+    params.set('network', 'BNB'); // BSC (BEP-20)
+    params.set('defaultFiatAmount', amt.toString());
+    params.set('walletAddress', address);
+    params.set('disableWalletAddressForm', 'true');
+    params.set('productsAvailed', 'BUY');
+    const url = `https://global.transak.com/?${params.toString()}`;
     window.location.href = url;
   };
 
@@ -65,7 +71,7 @@ function BuyUSDTPage() {
             onChange={(e) => setAmount(e.target.value)}
           />
         </div>
-        <button className="button-primary w-full" disabled={!amount || !address || loading}>Buy via MoonPay</button>
+        <button className="button-primary w-full" disabled={!amount || !address || loading}>Buy via Transak</button>
       </form>
 
       <div className="text-center">

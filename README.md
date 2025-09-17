@@ -14,7 +14,7 @@ A mobile-friendly WebView for a crypto chatbot running inside Facebook Messenger
 - View wallet info (address, tokens, balances, USD value)
 - Request a token swap by submitting form inputs
 - Change wallet PIN
-- Buy USDT by redirecting to MoonPay/Transak with wallet address
+- Buy USDT by redirecting to Transak with wallet address
 
 ## URL and Identity
 
