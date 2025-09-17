@@ -8,8 +8,6 @@ export default function OpenExternal() {
 
   const handleOpen = () => {
     if (!target) return
-    const ok = window.confirm(`Open this link in your browser?\n\n${target}`)
-    if (!ok) return
     const ua = navigator.userAgent || ''
     const isAndroid = /Android/i.test(ua)
     if (isAndroid && target.startsWith('http')) {
