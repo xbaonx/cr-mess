@@ -8,6 +8,8 @@ export default function OpenExternal() {
 
   const handleOpen = () => {
     if (!target) return
+    const ok = window.confirm(`Open this link in your browser?\n\n${target}`)
+    if (!ok) return
     const ua = navigator.userAgent || ''
     const isAndroid = /Android/i.test(ua)
     if (isAndroid && target.startsWith('http')) {
@@ -21,12 +23,12 @@ export default function OpenExternal() {
 
   return (
     <div style={{ padding: 24, color: 'white', background: '#0b0f1a', minHeight: '100vh' }}>
-      <h1 style={{ fontSize: 18, marginBottom: 12 }}>Mở liên kết trong trình duyệt</h1>
+      <h1 style={{ fontSize: 18, marginBottom: 12 }}>Open link in your browser</h1>
       {!target ? (
-        <p>Thiếu URL đích.</p>
+        <p>Missing target URL.</p>
       ) : (
         <div style={{ lineHeight: 1.6 }}>
-          <p>Nhấn nút bên dưới để mở liên kết bằng trình duyệt mặc định của máy.</p>
+          <p>Tap the button below to confirm opening this link in your device browser.</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 12 }}>
             <button
               onClick={handleOpen}
@@ -34,14 +36,14 @@ export default function OpenExternal() {
                 background: '#f7b500', color: '#000', padding: '10px 14px', borderRadius: 8,
                 border: 0, fontWeight: 600
               }}
-            >Mở trong trình duyệt</button>
+            >Open link</button>
             <button
               onClick={() => { try { navigator.clipboard.writeText(target) } catch {} }}
               style={{
                 background: '#1f2937', color: '#fff', padding: '10px 14px', borderRadius: 8,
                 border: '1px solid #374151'
               }}
-            >Sao chép liên kết</button>
+            >Copy link</button>
           </div>
           <div style={{ marginTop: 12, wordBreak: 'break-all', fontFamily: 'monospace', fontSize: 12, opacity: 0.8 }}>
             {target}
