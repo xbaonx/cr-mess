@@ -82,7 +82,7 @@ function BuyUSDTPage() {
           <div className="text-sm text-gray-400">Wallet address</div>
           <div className="font-mono break-all">{address || (loading ? 'Loading...' : '-')}</div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {mode === 'INR' ? (
           <div>
             <label className="label">Amount (INR)</label>
             <input
@@ -92,8 +92,9 @@ function BuyUSDTPage() {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
             />
-            <div className="text-xs text-gray-400 mt-1">Used when mode = INR (prefill defaultFiatAmount).</div>
+            <div className="text-xs text-gray-400 mt-1">Will prefill defaultFiatAmount in Transak.</div>
           </div>
+        ) : (
           <div>
             <label className="label">Amount (USDT)</label>
             <input
@@ -103,9 +104,9 @@ function BuyUSDTPage() {
               value={amountUsdt}
               onChange={(e) => setAmountUsdt(e.target.value)}
             />
-            <div className="text-xs text-gray-400 mt-1">Used when mode = USDT (prefill cryptoAmount).</div>
+            <div className="text-xs text-gray-400 mt-1">Will prefill cryptoAmount in Transak.</div>
           </div>
-        </div>
+        )}
         <button className="button-primary w-full" disabled={!address || loading || (mode==='INR' ? !amount : !amountUsdt)}>Buy via Transak</button>
       </form>
 
