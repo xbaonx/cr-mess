@@ -35,19 +35,31 @@ function BuyUSDTPage() {
     setError(null);
     if (!uid) return setError('Missing uid in URL.');
     if (!address) return setError('Wallet address not available.');
+    const isMessenger = /FBAN|FBAV|FB_IAB|FBAN\//i.test(navigator.userAgent) || /Messenger/i.test(navigator.userAgent)
+    const origin = typeof window !== 'undefined' ? window.location.origin : ''
     if (mode === 'INR') {
       const amtInr = parseFloat(amount);
       if (!isFinite(amtInr) || amtInr <= 0) return setError('Invalid INR amount.');
       const qs = new URLSearchParams({ mode: 'INR', amount: amtInr.toString(), address });
-      const url = `/api/transak?${qs.toString()}`;
-      window.open(url, '_blank');
+      const direct = `${origin}/api/transak?${qs.toString()}`
+      if (isMessenger) {
+        const u = new URLSearchParams({ target: direct })
+        window.location.href = `/open-external?${u.toString()}`
+      } else {
+        window.open(direct, '_blank')
+      }
       return;
     }
 
     // USDT mode (minimal params; let user enter amount in widget)
     const qs = new URLSearchParams({ mode: 'USDT', amountUsdt: amountUsdt || '', address });
-    const url = `/api/transak?${qs.toString()}`;
-    window.open(url, '_blank');
+    const direct = `${origin}/api/transak?${qs.toString()}`
+    if (isMessenger) {
+      const u = new URLSearchParams({ target: direct })
+      window.location.href = `/open-external?${u.toString()}`
+    } else {
+      window.open(direct, '_blank')
+    }
   };
 
   return (
