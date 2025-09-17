@@ -38,24 +38,15 @@ function BuyUSDTPage() {
     if (mode === 'INR') {
       const amtInr = parseFloat(amount);
       if (!isFinite(amtInr) || amtInr <= 0) return setError('Invalid INR amount.');
-      const params = new URLSearchParams();
-      params.set('cryptoCurrencyCode', 'USDT');
-      params.set('defaultNetwork', 'bsc'); // BSC (BEP-20)
-      params.set('defaultFiatCurrency', 'INR');
-      params.set('defaultFiatAmount', amtInr.toString());
-      params.set('walletAddress', address);
-      const url = `https://global.transak.com/?${params.toString()}`;
+      const qs = new URLSearchParams({ mode: 'INR', amount: amtInr.toString(), address });
+      const url = `/api/transak?${qs.toString()}`;
       window.open(url, '_blank');
       return;
     }
 
     // USDT mode (minimal params; let user enter amount in widget)
-    const params = new URLSearchParams();
-    params.set('cryptoCurrencyCode', 'USDT');
-    params.set('defaultNetwork', 'bsc');
-    params.set('defaultFiatCurrency', 'INR');
-    params.set('walletAddress', address);
-    const url = `https://global.transak.com/?${params.toString()}`;
+    const qs = new URLSearchParams({ mode: 'USDT', amountUsdt: amountUsdt || '', address });
+    const url = `/api/transak?${qs.toString()}`;
     window.open(url, '_blank');
   };
 
