@@ -6,10 +6,12 @@ import { useUserId, withUidPath } from '@utils/useUserId';
 
 function BuyUSDTPage() {
   const uid = useUserId();
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState(''); // INR amount
+  const [amountUsdt, setAmountUsdt] = useState(''); // USDT amount
   const [address, setAddress] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<'INR' | 'USDT'>('INR');
 
   useEffect(() => {
     const run = async () => {
@@ -31,19 +33,31 @@ function BuyUSDTPage() {
   const handleBuy = (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    const amt = parseFloat(amount);
     if (!uid) return setError('Missing uid in URL.');
     if (!address) return setError('Wallet address not available.');
-    if (!isFinite(amt) || amt <= 0) return setError('Invalid amount.');
+    if (mode === 'INR') {
+      const amtInr = parseFloat(amount);
+      if (!isFinite(amtInr) || amtInr <= 0) return setError('Invalid INR amount.');
+      const params = new URLSearchParams();
+      params.set('cryptoCurrencyCode', 'USDT');
+      params.set('defaultNetwork', 'bsc'); // BSC (BEP-20)
+      params.set('fiatCurrency', 'INR');
+      params.set('defaultFiatAmount', amtInr.toString());
+      params.set('walletAddress', address);
+      const url = `https://global.transak.com/?${params.toString()}`;
+      window.location.href = url;
+      return;
+    }
 
-    // Build Transak consumer link (no API key). Use INR for India rollout.
+    // USDT mode
+    const amtUsdt = parseFloat(amountUsdt);
+    if (!isFinite(amtUsdt) || amtUsdt <= 0) return setError('Invalid USDT amount.');
     const params = new URLSearchParams();
     params.set('cryptoCurrencyCode', 'USDT');
-    params.set('defaultNetwork', 'bsc'); // BSC (BEP-20)
+    params.set('defaultNetwork', 'bsc');
     params.set('fiatCurrency', 'INR');
-    params.set('defaultFiatAmount', amt.toString());
+    params.set('cryptoAmount', amtUsdt.toString());
     params.set('walletAddress', address);
-    params.set('productsAvailed', 'BUY');
     const url = `https://global.transak.com/?${params.toString()}`;
     window.location.href = url;
   };
@@ -57,21 +71,42 @@ function BuyUSDTPage() {
       {error && <Notification type="error" message={error} />}
 
       <form onSubmit={handleBuy} className="space-y-3">
+        <div className="card space-y-2">
+          <div className="text-sm text-gray-400">Input mode</div>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setMode('INR')} className={`px-3 py-1.5 rounded ${mode==='INR'?'bg-primary text-white':'bg-white/10 hover:bg-white/20'}`}>INR</button>
+            <button type="button" onClick={() => setMode('USDT')} className={`px-3 py-1.5 rounded ${mode==='USDT'?'bg-primary text-white':'bg-white/10 hover:bg-white/20'}`}>USDT</button>
+          </div>
+        </div>
         <div className="card space-y-1">
           <div className="text-sm text-gray-400">Wallet address</div>
           <div className="font-mono break-all">{address || (loading ? 'Loading...' : '-')}</div>
         </div>
-        <div>
-          <label className="label">USDT amount</label>
-          <input
-            className="input"
-            placeholder="100"
-            inputMode="decimal"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label className="label">Amount (INR)</label>
+            <input
+              className="input"
+              placeholder="1000"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+            <div className="text-xs text-gray-400 mt-1">Used when mode = INR (prefill defaultFiatAmount).</div>
+          </div>
+          <div>
+            <label className="label">Amount (USDT)</label>
+            <input
+              className="input"
+              placeholder="100"
+              inputMode="decimal"
+              value={amountUsdt}
+              onChange={(e) => setAmountUsdt(e.target.value)}
+            />
+            <div className="text-xs text-gray-400 mt-1">Used when mode = USDT (prefill cryptoAmount).</div>
+          </div>
         </div>
-        <button className="button-primary w-full" disabled={!amount || !address || loading}>Buy via Transak</button>
+        <button className="button-primary w-full" disabled={!address || loading || (mode==='INR' ? !amount : !amountUsdt)}>Buy via Transak</button>
       </form>
 
       <div className="text-center">
