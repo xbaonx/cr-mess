@@ -41,7 +41,7 @@ function BuyUSDTPage() {
       const params = new URLSearchParams();
       params.set('cryptoCurrencyCode', 'USDT');
       params.set('defaultNetwork', 'bsc'); // BSC (BEP-20)
-      params.set('fiatCurrency', 'INR');
+      params.set('defaultFiatCurrency', 'INR');
       params.set('defaultFiatAmount', amtInr.toString());
       params.set('walletAddress', address);
       const url = `https://global.transak.com/?${params.toString()}`;
@@ -49,14 +49,11 @@ function BuyUSDTPage() {
       return;
     }
 
-    // USDT mode
-    const amtUsdt = parseFloat(amountUsdt);
-    if (!isFinite(amtUsdt) || amtUsdt <= 0) return setError('Invalid USDT amount.');
+    // USDT mode (minimal params; let user enter amount in widget)
     const params = new URLSearchParams();
     params.set('cryptoCurrencyCode', 'USDT');
     params.set('defaultNetwork', 'bsc');
-    params.set('fiatCurrency', 'INR');
-    params.set('cryptoAmount', amtUsdt.toString());
+    params.set('defaultFiatCurrency', 'INR');
     params.set('walletAddress', address);
     const url = `https://global.transak.com/?${params.toString()}`;
     window.location.href = url;
