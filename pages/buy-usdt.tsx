@@ -39,7 +39,7 @@ function BuyUSDTPage() {
     // Build Transak consumer link (no API key). Use INR for India rollout.
     const params = new URLSearchParams();
     params.set('cryptoCurrencyCode', 'USDT');
-    params.set('network', 'BNB'); // BSC (BEP-20)
+    params.set('defaultNetwork', 'bsc'); // BSC (BEP-20)
     params.set('fiatCurrency', 'INR');
     params.set('defaultFiatAmount', amt.toString());
     params.set('walletAddress', address);
