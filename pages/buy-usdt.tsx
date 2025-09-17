@@ -45,7 +45,7 @@ function BuyUSDTPage() {
       params.set('defaultFiatAmount', amtInr.toString());
       params.set('walletAddress', address);
       const url = `https://global.transak.com/?${params.toString()}`;
-      window.location.href = url;
+      window.open(url, '_blank');
       return;
     }
 
@@ -56,7 +56,7 @@ function BuyUSDTPage() {
     params.set('defaultFiatCurrency', 'INR');
     params.set('walletAddress', address);
     const url = `https://global.transak.com/?${params.toString()}`;
-    window.location.href = url;
+    window.open(url, '_blank');
   };
 
   return (
