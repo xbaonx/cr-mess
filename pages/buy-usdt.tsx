@@ -73,9 +73,31 @@ function BuyUSDTPage() {
       <form onSubmit={handleBuy} className="space-y-3">
         <div className="card space-y-2">
           <div className="text-sm text-gray-400">Input mode</div>
-          <div className="flex gap-2">
-            <button type="button" onClick={() => setMode('INR')} className={`px-3 py-1.5 rounded ${mode==='INR'?'bg-primary text-white':'bg-white/10 hover:bg-white/20'}`}>INR</button>
-            <button type="button" onClick={() => setMode('USDT')} className={`px-3 py-1.5 rounded ${mode==='USDT'?'bg-primary text-white':'bg-white/10 hover:bg-white/20'}`}>USDT</button>
+          <div className="inline-flex items-center rounded-lg bg-white/5 p-1 border border-white/10">
+            <button
+              type="button"
+              aria-pressed={mode==='INR'}
+              onClick={() => setMode('INR')}
+              className={`px-4 py-1.5 rounded-md transition font-medium focus:outline-none focus:ring-2 focus:ring-yellow-400/60 ${
+                mode==='INR'
+                  ? 'bg-yellow-400 text-black shadow-sm'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              INR
+            </button>
+            <button
+              type="button"
+              aria-pressed={mode==='USDT'}
+              onClick={() => setMode('USDT')}
+              className={`px-4 py-1.5 rounded-md transition font-medium focus:outline-none focus:ring-2 focus:ring-yellow-400/60 ${
+                mode==='USDT'
+                  ? 'bg-yellow-400 text-black shadow-sm'
+                  : 'text-gray-300 hover:text-white hover:bg-white/10'
+              }`}
+            >
+              USDT
+            </button>
           </div>
         </div>
         <div className="card space-y-1">
