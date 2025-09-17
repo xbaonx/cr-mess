@@ -13,21 +13,27 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
 
     const params = new URLSearchParams()
     params.set('cryptoCurrencyCode', 'USDT')
-    params.set('defaultNetwork', 'bsc')
-    params.set('defaultFiatCurrency', 'INR')
+    // Align with luckypick2 working config
+    params.set('network', 'BNB') // BSC (BEP-20)
     params.set('walletAddress', addr)
+    params.set('disableWalletAddressForm', 'true')
+    params.set('productsAvailed', 'BUY')
 
     const m = String(mode || 'INR').toUpperCase()
     if (m === 'INR') {
+      params.set('fiatCurrency', 'INR')
       const amt = Number(String(amount || '').trim())
       if (!Number.isFinite(amt) || amt <= 0) {
         return res.status(400).json({ error: 'Invalid INR amount' })
       }
       params.set('defaultFiatAmount', String(amt))
+      // Hint for UPI (may be ignored by Transak based on availability)
+      params.set('paymentMethod', 'upi')
     } else if (m === 'USDT') {
-      // Minimal params; let the user input amount on Transak widget
-      // If you want to prefill crypto amount and it works for your account, uncomment next line:
-      // const a = Number(String(amountUsdt || '').trim()); if (Number.isFinite(a) && a > 0) params.set('cryptoAmount', String(a));
+      // Default to INR fiat for consistency; user can change within widget if allowed
+      params.set('fiatCurrency', 'INR')
+      const a = Number(String(amountUsdt || '').trim())
+      if (Number.isFinite(a) && a > 0) params.set('cryptoAmount', String(a))
     }
 
     const location = `https://global.transak.com/?${params.toString()}`
