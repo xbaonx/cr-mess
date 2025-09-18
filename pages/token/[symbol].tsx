@@ -152,7 +152,7 @@ function TokenDetailPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-2 00">{isSell ? `Sell ${symbol}` : `Buy ${symbol}`}</h2>
+                  <h2 className="text-xl font-semibold text-gray-200">{isSell ? `Sell ${symbol}` : `Buy ${symbol}`}</h2>
                   <div className="text-sm text-gray-400">{isSell ? `Convert ${symbol} to USDT` : `Convert USDT to ${symbol}`}</div>
                 </div>
                 <div className="h-8 w-8 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center">

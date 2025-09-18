@@ -21,5 +21,7 @@ export function useUserId(): string | null {
 }
 
 export function withUidPath(path: string, uid: string | null) {
-  return uid ? `${path}?uid=${encodeURIComponent(uid)}` : path;
+  if (!uid) return path;
+  const sep = path.includes('?') ? '&' : '?';
+  return `${path}${sep}uid=${encodeURIComponent(uid)}`;
 }
