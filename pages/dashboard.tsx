@@ -100,7 +100,10 @@ function DashboardPage() {
           <TokenListSkeleton />
         ) : (
           <div className="animate-fade-in">
-            <TokenList tokens={displayTokens} />
+            <TokenList
+              tokens={displayTokens}
+              linkBuilder={(t) => withUidPath(`/token/${encodeURIComponent(t.symbol)}?mode=sell`, uid)}
+            />
           </div>
         )}
       </div>

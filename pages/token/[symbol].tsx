@@ -12,7 +12,9 @@ function TokenDetailPage() {
   const router = useRouter();
   const uid = useUserId();
   const symbolParam = typeof router.query.symbol === 'string' ? router.query.symbol : '';
+  const modeParam = typeof router.query.mode === 'string' ? router.query.mode : '';
   const symbol = (symbolParam || '').toUpperCase();
+  const isSell = String(modeParam).toLowerCase() === 'sell';
 
   const [token, setToken] = useState<ApiToken | null>(null);
   const [loading, setLoading] = useState(false);
@@ -142,7 +144,7 @@ function TokenDetailPage() {
 
           {/* Chart removed */}
 
-          {/* Buy/Swap Section (feature-gated) */}
+          {/* Buy/Sell Swap Section (feature-gated) */}
           {features?.maintenanceMode && (
             <div className="card-elevated text-amber-400 text-sm p-4">Currently under maintenance. Some functions may be disabled.</div>
           )}
@@ -150,8 +152,8 @@ function TokenDetailPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-200">Buy {symbol}</h2>
-                  <div className="text-sm text-gray-400">Convert USDT to {symbol}</div>
+                  <h2 className="text-xl font-semibold text-gray-2 00">{isSell ? `Sell ${symbol}` : `Buy ${symbol}`}</h2>
+                  <div className="text-sm text-gray-400">{isSell ? `Convert ${symbol} to USDT` : `Convert USDT to ${symbol}`}</div>
                 </div>
                 <div className="h-8 w-8 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center">
                   <svg className="w-4 h-4 text-gray-900" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,7 +166,11 @@ function TokenDetailPage() {
               {txResult && <Notification type="success" message={txResult} />}
               
               <div className="card-elevated">
-                <SwapForm onSubmit={onSubmit} defaultTo={symbol} />
+                {isSell ? (
+                  <SwapForm onSubmit={onSubmit} fixedFrom={symbol} fixedTo="USDT" />
+                ) : (
+                  <SwapForm onSubmit={onSubmit} fixedFrom="USDT" fixedTo={symbol} />
+                )}
               </div>
             </div>
           ) : (

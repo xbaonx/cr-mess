@@ -17,13 +17,15 @@ type Props = {
   onSubmit: (values: SwapValues) => Promise<void> | void;
   defaultFrom?: string;
   defaultTo?: string;
+  fixedFrom?: string;
+  fixedTo?: string;
 };
 
-export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'USDT' }: Props) {
+export default function SwapForm({ onSubmit, defaultFrom = 'USDT', defaultTo = 'USDT', fixedFrom, fixedTo }: Props) {
   const uid = useUserId();
-  // Force source token to USDT regardless of defaultFrom
-  const [fromToken, setFromToken] = useState('USDT');
-  const [toToken, setToToken] = useState(defaultTo);
+  // Initialize tokens honoring fixedFrom/fixedTo if provided
+  const [fromToken, setFromToken] = useState((fixedFrom ?? defaultFrom ?? 'USDT').toUpperCase());
+  const [toToken, setToToken] = useState((fixedTo ?? defaultTo ?? 'USDT').toUpperCase());
   const [amount, setAmount] = useState('');
   const [pin, setPin] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -126,10 +128,13 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
     }
   };
 
-  // Ensure fromToken always remains USDT
+  // Keep state in sync if fixed tokens change
   React.useEffect(() => {
-    if (fromToken.toUpperCase() !== 'USDT') setFromToken('USDT');
-  }, [fromToken]);
+    if (fixedFrom) setFromToken(fixedFrom.toUpperCase());
+  }, [fixedFrom]);
+  React.useEffect(() => {
+    if (fixedTo) setToToken(fixedTo.toUpperCase());
+  }, [fixedTo]);
 
   const setMaxAmount = () => {
     if (typeof currentBalance === 'number' && isFinite(currentBalance)) {
@@ -144,13 +149,26 @@ export default function SwapForm({ onSubmit, defaultFrom = 'BNB', defaultTo = 'U
       <div className="flex items-end gap-2">
         <div className="flex-1">
           <label className="label">From token</label>
-          <div className="input flex items-center justify-between bg-gray-900">
-            <span className="truncate">USDT</span>
-            <span className="text-gray-400">(fixed)</span>
+          <div className="input flex items-center bg-gray-900">
+            <span className="truncate">{fromToken}</span>
           </div>
         </div>
         <div className="flex-1">
-          <TokenPicker label="To token" value={toToken} onChange={(v) => { setToToken(v); setQuote(null); setQuotedInput(null); setQuoteError(null); }} excludeSymbols={['USDT']} />
+          {fixedTo ? (
+            <>
+              <label className="label">To token</label>
+              <div className="input flex items-center bg-gray-900">
+                <span className="truncate">{toToken}</span>
+              </div>
+            </>
+          ) : (
+            <TokenPicker
+              label="To token"
+              value={toToken}
+              onChange={(v) => { setToToken(v); setQuote(null); setQuotedInput(null); setQuoteError(null); }}
+              excludeSymbols={[fromToken]}
+            />
+          )}
         </div>
       </div>
 
