@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import useSWR from 'swr';
 import Notification from '@components/Notification';
+import RequireWallet from '@components/RequireWallet';
 import SwapForm, { SwapValues } from '@components/SwapForm';
 import { TokenDetailSkeleton } from '@components/SkeletonLoader';
 import { ApiToken, getTokens, swapRequest, getFeatures } from '@utils/api';
@@ -165,13 +166,15 @@ function TokenDetailPage() {
               {txError && <Notification type="error" message={txError} />}
               {txResult && <Notification type="success" message={txResult} />}
               
-              <div className="card-elevated">
-                {isSell ? (
-                  <SwapForm onSubmit={onSubmit} fixedFrom={symbol} fixedTo="USDT" />
-                ) : (
-                  <SwapForm onSubmit={onSubmit} fixedFrom="USDT" fixedTo={symbol} />
-                )}
-              </div>
+              <RequireWallet>
+                <div className="card-elevated">
+                  {isSell ? (
+                    <SwapForm onSubmit={onSubmit} fixedFrom={symbol} fixedTo="USDT" />
+                  ) : (
+                    <SwapForm onSubmit={onSubmit} fixedFrom="USDT" fixedTo={symbol} />
+                  )}
+                </div>
+              </RequireWallet>
             </div>
           ) : (
             <div className="text-sm text-gray-500">Swaps are currently disabled.</div>

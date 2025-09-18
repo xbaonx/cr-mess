@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import TokenList from '@components/TokenList';
+import RequireWallet from '@components/RequireWallet';
 import Notification from '@components/Notification';
 import { TokenListSkeleton } from '@components/SkeletonLoader';
 import { getWalletInfo, WalletInfoResponse, getTokens } from '@utils/api';
@@ -88,25 +89,27 @@ function DashboardPage() {
       </div>
 
       {/* Assets Section */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-200">Assets</h2>
-          {!walletLoading && tokens.length > 0 && (
-            <div className="text-sm text-gray-400">{tokens.length} tokens</div>
+      <RequireWallet>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-200">Assets</h2>
+            {!walletLoading && tokens.length > 0 && (
+              <div className="text-sm text-gray-400">{tokens.length} tokens</div>
+            )}
+          </div>
+          
+          {walletLoading ? (
+            <TokenListSkeleton />
+          ) : (
+            <div className="animate-fade-in">
+              <TokenList
+                tokens={displayTokens}
+                linkBuilder={(t) => withUidPath(`/token/${encodeURIComponent(t.symbol)}?mode=sell`, uid)}
+              />
+            </div>
           )}
         </div>
-        
-        {walletLoading ? (
-          <TokenListSkeleton />
-        ) : (
-          <div className="animate-fade-in">
-            <TokenList
-              tokens={displayTokens}
-              linkBuilder={(t) => withUidPath(`/token/${encodeURIComponent(t.symbol)}?mode=sell`, uid)}
-            />
-          </div>
-        )}
-      </div>
+      </RequireWallet>
 
       {/* Action Buttons */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
