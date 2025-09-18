@@ -106,8 +106,12 @@ export async function buildSwapTx(opts: {
     // allowPartialFill: false,
   };
   if (FEE_RECIPIENT && Number.isFinite(INTEGRATOR_FEE_BPS) && INTEGRATOR_FEE_BPS > 0) {
-    params.referrer = FEE_RECIPIENT;
-    params.fee = INTEGRATOR_FEE_BPS; // bps
+    // 1inch expects fee as percent (not bps), and caps it at 3%
+    const pct = Math.min(Math.max(INTEGRATOR_FEE_BPS / 100, 0), 3);
+    if (pct > 0) {
+      params.referrer = FEE_RECIPIENT;
+      params.fee = pct; // percent (max 3)
+    }
   }
   const { data } = await c.get(`/swap/v6.0/${chainId}/swap`, { params });
   return data; // { tx: { to, data, value, gas, gasPrice, ... }, ... }
@@ -131,11 +135,12 @@ export async function getQuote(opts: { srcToken: string; dstToken: string; amoun
     dst: opts.dstToken,
     amount: opts.amountWei,
   };
-  const useFee = (opts.feeBpsOverride != null) ? Number(opts.feeBpsOverride) : INTEGRATOR_FEE_BPS;
+  const useFeeBps = (opts.feeBpsOverride != null) ? Number(opts.feeBpsOverride) : INTEGRATOR_FEE_BPS;
   const useRef = (opts.referrerOverride != null) ? opts.referrerOverride : FEE_RECIPIENT;
-  if (useRef && Number.isFinite(useFee) && useFee > 0) {
+  const feePct = Number.isFinite(useFeeBps) ? Math.min(Math.max(useFeeBps / 100, 0), 3) : 0;
+  if (useRef && feePct > 0) {
     params.referrer = useRef;
-    params.fee = useFee; // bps
+    params.fee = feePct; // percent (max 3)
   }
   const { data } = await c.get(`/swap/v6.0/${chainId}/quote`, { params });
   return data; // contains dstAmount, protocols, estimatedGas, etc.
